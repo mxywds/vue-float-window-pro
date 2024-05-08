@@ -7,6 +7,7 @@
       :ball-height="ballHeight"
       :ball-width="ballWidth"
       @mousedown.native="_startDrag"
+      @touchstart.native="_startTouchDrag"
       @click.native="_handleClickFloatBall"
       @dblclick.native="toggleMinimize"
       @contextmenu.prevent="_handleRightClickFloatBall"
@@ -23,14 +24,38 @@
       @click="_handleClickFloatWindow"
     >
       <!-- 可调整大小的边框 -->
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-top" @mousedown.stop="_startResize('top')"/>
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-bottom" @mousedown.stop="_startResize('bottom')"/>
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-left" @mousedown.stop="_startResize('left')"/>
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-right" @mousedown.stop="_startResize('right')"/>
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-top-left" @mousedown.stop="_startResize('top-left')"/>
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-top-right" @mousedown.stop="_startResize('top-right')"/>
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-bottom-left" @mousedown.stop="_startResize('bottom-left')"/>
-      <div v-show="windowSizeStatus!=='maximize'" class="resizer resizer-bottom-right" @mousedown.stop="_startResize('bottom-right')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-top"
+           @touchstart.stop="_startTouchResize('top')"
+           @mousedown.stop="_startResize('top')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-bottom"
+           @touchstart.stop="_startTouchResize('bottom')"
+           @mousedown.stop="_startResize('bottom')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-left"
+           @touchstart.stop="_startTouchResize('left')"
+           @mousedown.stop="_startResize('left')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-right"
+           @touchstart.stop="_startTouchResize('right')"
+           @mousedown.stop="_startResize('right')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-top-left"
+           @touchstart.stop="_startTouchResize('top-left')"
+           @mousedown.stop="_startResize('top-left')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-top-right"
+           @touchstart.stop="_startTouchResize('top-right')"
+           @mousedown.stop="_startResize('top-right')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-bottom-left"
+           @touchstart.stop="_startTouchResize('bottom-left')"
+           @mousedown.stop="_startResize('bottom-left')"/>
+      <div v-show="windowSizeStatus!=='maximize'"
+           class="resizer resizer-bottom-right"
+           @touchstart.stop="_startTouchResize('bottom-right')"
+           @mousedown.stop="_startResize('bottom-right')"/>
 
       <!-- 标题栏 -->
         <title-bar
@@ -50,6 +75,7 @@
           :title-bar-right-style="titleBarRightStyle"
           :title-bar-background-style="titleBarStyle"
           @mousedown.native="_startDrag"
+          @touchstart.native="_startTouchDrag"
           @toggleMinimize="toggleMinimize"
           @toggleMaximize="toggleMaximize"
           @closeWindow="closeWindow"
@@ -99,8 +125,9 @@ export default {
   },
   mounted () {
     this.windowId = this._generateUUID()
+    document.addEventListener('click', this.handleOutsideClick)
   },
-  emits: ['clickFloatWindow', 'clickFloatBall', 'rightClickFloatBall',
+  emits: ['outsideClick', 'clickFloatWindow', 'clickFloatBall', 'rightClickFloatBall',
     'startDrag', 'stopDrag', 'startResize',
     'resize', 'stopResize', 'windowStatusChange',
     'dblclickFloatBall', 'closeWindow'],
@@ -204,6 +231,36 @@ export default {
       )
     },
     /**
+     * 窗口大小检查
+     * @private
+     */
+    _windowSizeCheck ({ width, height }) {
+      const { width: minWidth, height: minHeight } = this.minSize
+      const { width: maxWidth, height: maxHeight } = this.maxSize
+      // 确保不超出最小值和最大值
+      width = Math.max(minWidth, width)
+      height = Math.max(minHeight, height)
+      width = Math.min(maxWidth, width)
+      height = Math.min(maxHeight, height)
+      return { width, height }
+    },
+    /**
+     * 处理外部点击事件
+     * @param event
+     */
+    handleOutsideClick (event) {
+      if (this.windowSizeStatus !== 'normal' || this.windowSizeStatus !== 'minimize') {
+        return
+      }
+      if (!this.$refs.modal.contains(event.target)) {
+        /**
+         * 点击悬浮窗外部时调用
+         * @event startResize
+         */
+        this.$emit('outsideClick')
+      }
+    },
+    /**
      * 窗口点击处理
      * @private
      */
@@ -252,9 +309,10 @@ export default {
       if (this.windowSizeStatus === 'maximize') {
         return
       }
+      this._disableTextSelection()
       this.isDragging = true
       /**
-       * 开始拖动悬浮窗时调用
+       * 开始拖动时调用
        * @event startDrag
        * @property {number} x 起始位置x
        * @property {number} y 起始位置y
@@ -263,8 +321,34 @@ export default {
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
       document.addEventListener('mousemove', this._drag)
       document.addEventListener('mouseup', this._stopDrag)
-      // 阻止默认事件，取消文字选中
+    },
+    /**
+     * 开始拖动(移动端)
+     * @param event
+     * @private
+     */
+    _startTouchDrag (event) {
+      if (!this.isActionEnable('drag')) {
+        return
+      }
+      if (this.windowSizeStatus === 'maximize') {
+        return
+      }
+      this._disableTextSelection()
       event.preventDefault()
+      const touch = event.touches[0]
+      this.isDragging = true
+      /**
+       * 开始拖动时调用
+       * @event startDrag
+       * @property {number} x 起始位置x
+       * @property {number} y 起始位置y
+       */
+      this.$emit('startDrag', { x: touch.clientX, y: touch.clientY })
+      this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
+
+      window.addEventListener('touchmove', this._touchDrag, { passive: false })
+      window.addEventListener('touchend', this._stopTouchDrag)
     },
     /**
      * 拖动窗口
@@ -272,6 +356,7 @@ export default {
      * @private
      */
     _drag (event) {
+      event.preventDefault()
       if (!this.isDragging) return
 
       // 计算偏移量
@@ -286,6 +371,30 @@ export default {
       this._applyBoundaryCheck(newX, newY)
 
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
+    },
+    /**
+     * 拖动窗口(移动端)
+     * @param event
+     * @private
+     */
+    _touchDrag (event) {
+      event.preventDefault()
+      if (!this.isDragging) return
+
+      const touch = event.touches[0]
+
+      // 计算偏移量
+      const deltaX = touch.clientX - this.startPosition.x
+      const deltaY = touch.clientY - this.startPosition.y
+
+      // 更新窗口的新位置
+      const newX = this.windowState.x + deltaX
+      const newY = this.windowState.y + deltaY
+
+      // 应用边界检查
+      this._applyBoundaryCheck(newX, newY)
+
+      this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
     },
     /**
      * 更新窗口开始位置
@@ -347,10 +456,57 @@ export default {
      * @private
      */
     _stopDrag () {
+      this._enableTextSelection()
       this.isDragging = false
       document.removeEventListener('mousemove', this._drag)
       document.removeEventListener('mouseup', this._stopDrag)
 
+      const screenWidth = window.innerWidth
+      const windowWidth = this.windowState.width
+      const ballWidth = this.ballWidth
+
+      // 边缘吸附
+      let nowX = this.windowState.x
+      const nowY = this.windowState.y
+      if (!this.isActionEnable('stickToEdges')) {
+        return
+      }
+      const edgeTolerance = this.edgeTolerance
+      if (nowX <= edgeTolerance) {
+        nowX = 0
+        this.updateWindowPosition({ newX: nowX })
+        return
+      }
+
+      if (this.windowSizeStatus === 'normal') {
+        if (nowX >= screenWidth - windowWidth - edgeTolerance) {
+          nowX = screenWidth - windowWidth
+        }
+      } else if (this.windowSizeStatus === 'minimize') {
+        if (nowX >= screenWidth - ballWidth - edgeTolerance) {
+          nowX = screenWidth - ballWidth
+        }
+      }
+
+      this.updateWindowPosition({ newX: nowX })
+
+      /**
+       * 停止拖动悬浮窗时调用
+       * @event stopDrag
+       * @property {number} nowX 现在位置x
+       * @property {number} nowY 现在位置y
+       */
+      this.$emit('stopDrag', { nowX, nowY })
+    },
+    /**
+     * 停止拖动(移动端)
+     * @private
+     */
+    _stopTouchDrag () {
+      this._enableTextSelection()
+      this.isDragging = false
+      window.removeEventListener('touchmove', this._touchDrag)
+      window.removeEventListener('touchend', this._stopTouchDrag)
       const screenWidth = window.innerWidth
       const windowWidth = this.windowState.width
       const ballWidth = this.ballWidth
@@ -402,6 +558,7 @@ export default {
       if (!this.isActionEnable('resize')) {
         return
       }
+      this._disableTextSelection()
       this.isResizing = true
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
       document.addEventListener('mousemove', this._resize)
@@ -409,18 +566,37 @@ export default {
       this.resizeDirection = direction
     },
     /**
+     * 开始调整大小(移动端)
+     * @param direction
+     * @private
+     */
+    _startTouchResize (direction) {
+      /**
+       * 开始调整悬浮窗大小时调用
+       * @event startResize
+       */
+      this.$emit('startResize')
+      if (!this.isActionEnable('resize')) {
+        return
+      }
+      this._disableTextSelection()
+      this.isResizing = true
+      const touch = event.touches[0]
+      this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
+      window.addEventListener('touchmove', this._touchResize, { passive: false })
+      window.addEventListener('touchend', this._stopTouchResize)
+      this.resizeDirection = direction
+    },
+    /**
      * 调整大小
-     * todo 在边界调整大小会有问题
      * @param event
      * @private
      */
     _resize (event) {
+      event.preventDefault()
       if (!this.isResizing) {
         return
       }
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
-
       const deltaX = event.clientX - this.startPosition.x
       const deltaY = event.clientY - this.startPosition.y
 
@@ -466,18 +642,93 @@ export default {
           break
       }
 
-      // 添加边界检查
-      newX = Math.min(Math.max(newX, 0), screenWidth - newWidth)
-      newY = Math.min(Math.max(newY, 0), screenHeight - newHeight)
+      const check = this._windowSizeCheck({ width: newWidth, height: newHeight })
+      newWidth = check.width
+      newHeight = check.height
 
-      // 限制大小在 minSize 和 maxSize 之间，同时考虑边界
-      newWidth = Math.min(Math.max(newWidth, this.minSize.width), screenWidth - newX)
-      newHeight = Math.min(Math.max(newHeight, this.minSize.height), screenHeight - newY)
+      this._applyBoundaryCheck(newX, newY)
 
-      this.updateWindowPosition({ newX, newY })
       this.updateWindowSize({ newWidth, newHeight })
 
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
+
+      /**
+       * 调整悬浮窗大小时调用
+       * @event resize
+       * @property {number} deltaX 偏移量x
+       * @property {number} deltaY 偏移量y
+       * @property {number} newX 现在位置x
+       * @property {number} newY 现在位置y
+       * @property {number} newWidth 宽
+       * @property {number} newHeight 高
+       */
+      this.$emit('resize', { deltaX, deltaY, newX, newY, newWidth, newHeight })
+    },
+    /**
+     * 调整大小(移动端)
+     * @param event
+     * @private
+     */
+    _touchResize (event) {
+      event.preventDefault()
+      if (!this.isResizing) {
+        return
+      }
+      const touch = event.touches[0]
+      const deltaX = touch.clientX - this.startPosition.x
+      const deltaY = touch.clientY - this.startPosition.y
+
+      let newX = this.windowState.x
+      let newY = this.windowState.y
+      let newWidth = this.windowState.width
+      let newHeight = this.windowState.height
+
+      switch (this.resizeDirection) {
+        case 'top':
+          newY += deltaY
+          newHeight -= deltaY
+          break
+        case 'bottom':
+          newHeight += deltaY
+          break
+        case 'left':
+          newX += deltaX
+          newWidth -= deltaX
+          break
+        case 'right':
+          newWidth += deltaX
+          break
+        case 'top-left':
+          newX += deltaX
+          newY += deltaY
+          newWidth -= deltaX
+          newHeight -= deltaY
+          break
+        case 'top-right':
+          newY += deltaY
+          newWidth += deltaX
+          newHeight -= deltaY
+          break
+        case 'bottom-left':
+          newX += deltaX
+          newWidth -= deltaX
+          newHeight += deltaY
+          break
+        case 'bottom-right':
+          newWidth += deltaX
+          newHeight += deltaY
+          break
+      }
+
+      const check = this._windowSizeCheck({ width: newWidth, height: newHeight })
+      newWidth = check.width
+      newHeight = check.height
+
+      this._applyBoundaryCheck(newX, newY)
+
+      this.updateWindowSize({ newWidth, newHeight })
+
+      this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
 
       /**
        * 调整悬浮窗大小时调用
@@ -496,6 +747,7 @@ export default {
      * @private
      */
     _stopResize () {
+      this._enableTextSelection()
       /**
        * 停止调整悬浮窗大小时调用
        * @event stopResize
@@ -509,6 +761,47 @@ export default {
       document.removeEventListener('mousemove', this._resize)
       document.removeEventListener('mouseup', this._stopResize)
     },
+    /**
+     * 停止调整大小(移动端)
+     * @private
+     */
+    _stopTouchResize () {
+      this._enableTextSelection()
+      /**
+       * 停止调整悬浮窗大小时调用
+       * @event stopResize
+       * @property {number} x 现在位置x
+       * @property {number} y 现在位置y
+       * @property {number} width 宽
+       * @property {number} height 高
+       */
+      this.$emit('stopResize', { ...this.windowState })
+      this.isResizing = false
+
+      window.removeEventListener('touchmove', this._touchResize)
+      window.removeEventListener('touchend', this._stopTouchResize)
+    },
+    /**
+     * 禁用文本选择
+     * @private
+     */
+    _disableTextSelection () {
+      document.body.style.userSelect = 'none'
+      document.body.style.webkitUserSelect = 'none'
+      document.body.style.msUserSelect = 'none'
+      document.body.style.mozUserSelect = 'none'
+    },
+    /**
+     * 启用文本选择
+     * @private
+     */
+    _enableTextSelection () {
+      document.body.style.userSelect = ''
+      document.body.style.webkitUserSelect = ''
+      document.body.style.msUserSelect = ''
+      document.body.style.mozUserSelect = ''
+    },
+
     /**
      * 获取窗口id
      * @returns {null}
@@ -644,6 +937,9 @@ export default {
       }
       this.$destroy()
     }
+  },
+  beforeDestroy () {
+    document.removeEventListener('click', this.handleOutsideClick)
   }
 }
 </script>
