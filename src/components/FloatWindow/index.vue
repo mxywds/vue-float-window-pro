@@ -26,7 +26,7 @@
       <!-- 可调整大小的边框 -->
       <div v-show="windowSizeStatus!=='maximize'"
            class="resizer resizer-top"
-           @touchstart.stop="_startTouchResize('top')"
+           @touchstart.stop="_startTouchDrag"
            @mousedown.stop="_startResize('top')"/>
       <div v-show="windowSizeStatus!=='maximize'"
            class="resizer resizer-bottom"
@@ -41,19 +41,19 @@
            @touchstart.stop="_startTouchResize('right')"
            @mousedown.stop="_startResize('right')"/>
       <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer resizer-top-left"
+           class="resizer corner resizer-top-left"
            @touchstart.stop="_startTouchResize('top-left')"
            @mousedown.stop="_startResize('top-left')"/>
       <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer resizer-top-right"
+           class="resizer corner resizer-top-right"
            @touchstart.stop="_startTouchResize('top-right')"
            @mousedown.stop="_startResize('top-right')"/>
       <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer resizer-bottom-left"
+           class="resizer corner resizer-bottom-left"
            @touchstart.stop="_startTouchResize('bottom-left')"
            @mousedown.stop="_startResize('bottom-left')"/>
       <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer resizer-bottom-right"
+           class="resizer corner resizer-bottom-right"
            @touchstart.stop="_startTouchResize('bottom-right')"
            @mousedown.stop="_startResize('bottom-right')"/>
 
@@ -75,7 +75,6 @@
           :title-bar-right-style="titleBarRightStyle"
           :title-bar-background-style="titleBarStyle"
           @mousedown.native="_startDrag"
-          @touchstart.native="_startTouchDrag"
           @toggleMinimize="toggleMinimize"
           @toggleMaximize="toggleMaximize"
           @closeWindow="closeWindow"
@@ -142,6 +141,10 @@ export default {
        */
       isDragging: false,
       /**
+       * 窗口是否拖动过(由于移动端判断)
+       */
+      moved: false,
+      /**
        * 窗口是否正在被调整大小
        */
       isResizing: false,
@@ -165,7 +168,11 @@ export default {
       startPosition: {
         x: 0,
         y: 0
-      }
+      },
+      /**
+       * 安全范围值
+       */
+      safeDistance: 20
     }
   },
   computed: {
@@ -336,6 +343,7 @@ export default {
       }
       this._disableTextSelection()
       event.preventDefault()
+
       const touch = event.touches[0]
       this.isDragging = true
       /**
@@ -347,6 +355,7 @@ export default {
       this.$emit('startDrag', { x: touch.clientX, y: touch.clientY })
       this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
 
+      this.moved = false
       window.addEventListener('touchmove', this._touchDrag, { passive: false })
       window.addEventListener('touchend', this._stopTouchDrag)
     },
@@ -381,6 +390,7 @@ export default {
       event.preventDefault()
       if (!this.isDragging) return
 
+      this.moved = true
       const touch = event.touches[0]
 
       // 计算偏移量
@@ -392,7 +402,7 @@ export default {
       const newY = this.windowState.y + deltaY
 
       // 应用边界检查
-      this._applyBoundaryCheck(newX, newY)
+      this._applyTouchBoundaryCheck(newX, newY)
 
       this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
     },
@@ -452,6 +462,50 @@ export default {
       this.updateWindowPosition({ newX, newY })
     },
     /**
+     * 边界检查(移动端)
+     * @param newX
+     * @param newY
+     * @private
+     */
+    _applyTouchBoundaryCheck (newX, newY) {
+      const safeDistance = this.safeDistance
+
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+      const windowWidth = this.windowState.width
+      const windowHeight = this.windowState.height
+      const ballWidth = this.ballWidth
+      const ballHeight = this.ballHeight
+
+      if (this.windowSizeStatus === 'normal') {
+        newX = Math.min(
+          // 窗口左边缘不能小于0
+          Math.max(newX, safeDistance),
+          // 窗口右边缘不能超出屏幕宽度
+          screenWidth - windowWidth - safeDistance)
+
+        newY = Math.min(
+          // 窗口上边缘不能小于0
+          Math.max(newY, safeDistance),
+          // 窗口下边缘不能超出屏幕高度
+          screenHeight - windowHeight - safeDistance)
+      } else if (this.windowSizeStatus === 'minimize') {
+        newX = Math.min(
+          // 悬浮球左边缘不能小于0
+          Math.max(newX, safeDistance),
+          // 悬浮球右边缘不能超出屏幕宽度
+          screenWidth - ballWidth - safeDistance)
+
+        newY = Math.min(
+          // 悬浮球上边缘不能小于0
+          Math.max(newY, safeDistance),
+          // 悬浮球下边缘不能超出屏幕高度
+          screenHeight - ballHeight - safeDistance)
+      }
+      this.updateWindowPosition({ newX, newY })
+    },
+
+    /**
      * 停止拖动
      * @private
      */
@@ -507,9 +561,16 @@ export default {
       this.isDragging = false
       window.removeEventListener('touchmove', this._touchDrag)
       window.removeEventListener('touchend', this._stopTouchDrag)
+
+      if (this.windowSizeStatus === 'minimize' && !this.moved) {
+        // 暂时先处理悬浮球双击事件
+        this.toggleMinimize()
+        return
+      }
       const screenWidth = window.innerWidth
       const windowWidth = this.windowState.width
       const ballWidth = this.ballWidth
+      const safeDistance = this.safeDistance
 
       // 边缘吸附
       let nowX = this.windowState.x
@@ -519,18 +580,18 @@ export default {
       }
       const edgeTolerance = this.edgeTolerance
       if (nowX <= edgeTolerance) {
-        nowX = 0
+        nowX = safeDistance
         this.updateWindowPosition({ newX: nowX })
         return
       }
 
       if (this.windowSizeStatus === 'normal') {
         if (nowX >= screenWidth - windowWidth - edgeTolerance) {
-          nowX = screenWidth - windowWidth
+          nowX = screenWidth - windowWidth - safeDistance
         }
       } else if (this.windowSizeStatus === 'minimize') {
         if (nowX >= screenWidth - ballWidth - edgeTolerance) {
-          nowX = screenWidth - ballWidth
+          nowX = screenWidth - ballWidth - safeDistance
         }
       }
 
@@ -724,7 +785,7 @@ export default {
       newWidth = check.width
       newHeight = check.height
 
-      this._applyBoundaryCheck(newX, newY)
+      this._applyTouchBoundaryCheck(newX, newY)
 
       this.updateWindowSize({ newWidth, newHeight })
 
@@ -963,8 +1024,12 @@ export default {
     //overflow: auto;
   }
 
-  $size: 10px;
-  $bg-color: #ccc;
+  $size: 20px;
+
+  .corner{
+    width: $size+10;
+    height: $size+10;
+  }
 
   .resizer {
     position: absolute;
