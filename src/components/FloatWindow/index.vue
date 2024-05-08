@@ -364,6 +364,7 @@ export default {
       const edgeTolerance = this.edgeTolerance
       if (nowX <= edgeTolerance) {
         nowX = 0
+        this.updateWindowPosition({ newX: nowX })
         return
       }
 
@@ -555,10 +556,10 @@ export default {
      * @public
      */
     updateWindowSize ({ newWidth, newHeight }) {
-      if (newWidth) {
+      if (newWidth || newWidth === 0) {
         this.windowState.width = newWidth
       }
-      if (newHeight) {
+      if (newHeight || newHeight === 0) {
         this.windowState.height = newHeight
       }
     },
@@ -569,10 +570,10 @@ export default {
      * @public
      */
     updateWindowPosition ({ newX, newY }) {
-      if (newX) {
+      if (newX || newX === 0) {
         this.windowState.x = newX
       }
-      if (newY) {
+      if (newY || newY === 0) {
         this.windowState.y = newY
       }
     },
