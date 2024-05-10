@@ -31,10 +31,10 @@ vue仿win窗口实现悬浮窗拖动，调整大小，最大化，复原，及�
 
 </p>
 
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/all.png)
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/title.png)
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/web.png)
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/slot2.png)
+![](./docs/assets/all.png)
+![](./docs/assets/title.png)
+![](./docs/assets/web.png)
+![](./docs/assets/slot2.png)
 
 
 ## 目录

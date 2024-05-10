@@ -6,7 +6,7 @@ title: FloatWindow
 
 - 仿win窗口实现的悬浮窗
   
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/all.png)
+![演示](../assets/all.png)
 
 ## 基础用法
 
@@ -30,11 +30,10 @@ title: FloatWindow
     title="更改标题"
 />
 ```
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/title.png)
+![更改标题](../assets/title.png)
 ## 副标题
 
 通过设置`subtitle`属性可以更改悬浮窗的副标题。
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/subtitle.png)
 ```vue
 
 <FloatWindow
@@ -42,7 +41,7 @@ title: FloatWindow
     subtitle="副标题"
 />
 ```
-
+![副标题](../assets/subtitle.png)
 ## 更改颜色
 
 可以更改悬浮窗的标题栏等颜色。
@@ -55,7 +54,7 @@ title: FloatWindow
     title-bar-background-color="rgba(255, 0, 0, 1)"
 />
 ```
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/color.png)
+![更改颜色](../assets/color.png)
 
 ## 更改样式
 
@@ -71,7 +70,7 @@ title: FloatWindow
     title-bar-right-style="backgroundColor:red"
 />
 ```
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/style.png)
+![更改样式](../assets/style.png)
 
 ## 插槽插入内容
 
@@ -82,7 +81,7 @@ title: FloatWindow
 自定义内容
 </FloatWindow>
 ```
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/slot.png)
+![插槽插入内容](../assets/slot.png)
 ## 插槽插入内容2
 
 ```vue
@@ -116,7 +115,7 @@ title: FloatWindow
 </template>
 </FloatWindow>
 ```
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/slot2.png)
+![插槽插入内容2](../assets/slot2.png)
 ## 显示网页
 
 通过配置`path`属性，可以在悬浮窗内显示网页(使用的是iframe方案，会有跨域问题)。
@@ -128,7 +127,7 @@ title: FloatWindow
     path="https://www.bing.com/"
 />
 ```
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/web.png)
+![显示网页](../assets/web.png)
 ## 显示网络图片
 
 通过配置`path`属性，可以直接在悬浮窗内显示网络图片(使用的是iframe方案，会有跨域问题)，
@@ -141,7 +140,7 @@ title: FloatWindow
     path="'https://www.example.com/xxx.png'"
 />
 ```
-![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/iamge.png)
+![显示网络图片](../assets/iamge.png)
 ## 边缘吸附
 
 组件默认开启边缘吸附功能，可以调整`edgeTolerance`属性
