@@ -2,7 +2,7 @@
   <div class="title-bar"
        :style="`${titleBarStyle?
        titleBarStyle:
-       `height: ${titleBarHeight};
+       `height: ${titleBarHeight}+'px';
        background-color: ${titleBarBackgroundColor};`}`">
     <!-- 标题栏左侧区域 -->
     <div class="left" :style="titleBarLeftStyle">
@@ -30,20 +30,24 @@
       <img
         src="@/assets/icon/minimize.png"
         v-if="isActionEnable('minimize')"
-        @click="toggleMinimize"/>
+        @click="handleMinimize" alt="最小化"/>
       <img
         src="@/assets/icon/maximize.png"
-        v-if="isActionEnable('maximize')&&this.windowSizeStatus === 'normal'"
-        @click="toggleMaximize"/>
+        v-if="isActionEnable('maximize')&&
+        (this.windowSizeStatus === 'normal'||
+        this.windowSizeStatus === 'splitScreen')"
+        @click="handleMaximize" alt="最大化"/>
       <img
         src="@/assets/icon/drop-down.png"
-        v-if="isActionEnable('maximize')&&this.windowSizeStatus === 'maximize'"
-        @click="toggleMaximize"/>
+        v-if="isActionEnable('restore')&&
+        (this.windowSizeStatus === 'maximize'||
+        this.windowSizeStatus === 'splitScreen')"
+        @click="handleRestore" alt="复原"/>
 
       <img
         src="@/assets/icon/close.png"
         v-if="isActionEnable('close')"
-        @click="closeWindow"/>
+        @click="closeWindow" alt="关闭"/>
     </div>
   </div>
 </template>
@@ -62,8 +66,10 @@
     display: flex;
     justify-content: flex-start;
     img {
-      height: 30px;
-      width: 30px;
+      height: 20%;
+      width: 20%;
+      max-height: 30px;
+      max-width: 30px;
       padding: 4px 8px;
       margin-left: 4px;
       cursor: pointer;
@@ -75,14 +81,20 @@
   }
   .center{
     flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
   }
   .right {
     flex: 1;
     display: flex;
     justify-content: flex-end;
     img {
-      height: 30px;
-      width: 30px;
+      height: 20%;
+      width: 20%;
+      max-height: 30px;
+      max-width: 30px;
       padding: 4px 8px;
       margin-left: 4px;
       cursor: pointer;
@@ -122,7 +134,7 @@ export default {
      */
     titleStyle () {
       return {
-        fontSize: this.titleFontSize,
+        fontSize: this.titleFontSize + 'rem',
         color: this.titleFontColor
       }
     },
@@ -132,7 +144,7 @@ export default {
      */
     subtitleStyle () {
       return {
-        fontSize: this.subtitleFontSize,
+        fontSize: this.subtitleFontSize + 'rem',
         color: this.subtitleFontColor
       }
     }
@@ -141,14 +153,20 @@ export default {
     /**
      * 最小化窗口
      */
-    toggleMinimize () {
-      this.$emit('toggleMinimize')
+    handleMinimize () {
+      this.$emit('handleMinimize')
     },
     /**
      * 最大化窗口
      */
-    toggleMaximize () {
-      this.$emit('toggleMaximize')
+    handleMaximize () {
+      this.$emit('handleMaximize')
+    },
+    /**
+     * 还原窗口
+     */
+    handleRestore () {
+      this.$emit('handleRestore')
     },
     /**
      * 关闭窗口

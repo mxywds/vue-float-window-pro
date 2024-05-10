@@ -19,7 +19,7 @@ vue仿win窗口实现悬浮窗拖动，调整大小，最大化，复原，及�
   <p align="center">
     用vue-float-window-pro快速创建悬浮窗
     <br />
-    <a href="https://github.com/mxywds/vue-float-window-pro"><strong>探索本项目的文档 »</strong></a>
+    <a href="https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/components/floatWindow.md"><strong>探索本项目的文档 »</strong></a>
     <br />
     <br />
     <a href="https://github.com/mxywds/vue-float-window-pro">查看Demo</a>
@@ -31,6 +31,10 @@ vue仿win窗口实现悬浮窗拖动，调整大小，最大化，复原，及�
 
 </p>
 
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/all.png)
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/title.png)
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/web.png)
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/slot2.png)
 
 
 ## 目录

@@ -3,7 +3,7 @@ const state = {
    * 页面悬浮窗初始的最大 z-index 值
    * @type {number}
    */
-  maxZIndex: 20
+  maxZIndex: 200
 }
 
 const mutations = {

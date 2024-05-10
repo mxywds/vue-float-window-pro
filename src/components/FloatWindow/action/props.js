@@ -5,7 +5,7 @@ export default {
      * 边缘吸附阈值
      */
     edgeTolerance: {
-      type: Number,
+      type: Number | String,
       default: 100
     },
     /**
@@ -13,14 +13,15 @@ export default {
      */
     actions: {
       type: Array,
-      default: () => ['drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'hide', 'show', 'close']
+      default: () => ['drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'restore',
+        'hide', 'show', 'close', 'footer', 'toolbar', 'leftSidebar', 'rightSidebar', 'splitScreen']
     },
     /**
-     * 禁用的功能
+     * 禁用的功能(优先级高)
      */
     disabledActions: {
       type: Array,
-      default: () => []
+      default: () => ['footer', 'toolbar', 'leftSidebar', 'rightSidebar']
     },
     /**
      * 窗口内容路由参数（不为空则加载路由）

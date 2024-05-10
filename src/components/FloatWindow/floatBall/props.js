@@ -5,14 +5,14 @@ export default {
      * 悬浮球高度
      */
     ballHeight: {
-      type: Number,
+      type: Number | String,
       default: 40
     },
     /**
      * 悬浮球宽度
      */
     ballWidth: {
-      type: Number,
+      type: Number | String,
       default: 40
     },
     /**

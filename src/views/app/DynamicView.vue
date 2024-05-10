@@ -27,8 +27,8 @@ export default {
       // await floatWindow.hide()
       // await floatWindow.updateWindowSize({ newWidth:300, newHeight:300 })
       // await floatWindow.updateWindowPosition({ newX:50, newY:50 })
-      // await floatWindow.toggleMaximize()
-      // await floatWindow.toggleMinimize()
+      // await floatWindow.handleMaximize()
+      // await floatWindow.handleMinimize()
       // await floatWindow.closeWindow()
     }
 

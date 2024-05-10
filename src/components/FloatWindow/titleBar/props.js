@@ -5,8 +5,8 @@ export default {
      * 标题栏的高度
      */
     titleBarHeight: {
-      type: Number,
-      default: 30
+      type: Number | String,
+      default: '10vh'
     },
     /**
      * 标题栏的背景颜色
@@ -33,7 +33,7 @@ export default {
      */
     titleFontSize: {
       type: Number,
-      default: 20
+      default: 1
     },
     /**
      * 标题字体颜色
@@ -53,7 +53,7 @@ export default {
      */
     subtitleFontSize: {
       type: Number,
-      default: 14
+      default: 0.8
     },
     /**
      * 副标题字体颜色

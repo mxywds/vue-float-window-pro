@@ -5,10 +5,15 @@ title: FloatWindow
 # FloatWindow
 
 - 仿win窗口实现的悬浮窗
+  
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/all.png)
 
 ## 基础用法
+
 在插槽内定义想要显示的内容，并设置标题。
+
 ```vue
+
 <FloatWindow
     title="基础用法">
 自定义内容
@@ -16,16 +21,22 @@ title: FloatWindow
 ```
 
 ## 更改标题
+
 通过设置`title`属性，可以更改悬浮窗的标题。
+
 ```vue
+
 <FloatWindow
     title="更改标题"
 />
 ```
-
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/title.png)
 ## 副标题
+
 通过设置`subtitle`属性可以更改悬浮窗的副标题。
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/subtitle.png)
 ```vue
+
 <FloatWindow
     title="更改标题"
     subtitle="副标题"
@@ -33,17 +44,25 @@ title: FloatWindow
 ```
 
 ## 更改颜色
+
 可以更改悬浮窗的标题栏等颜色。
+
 ```vue
+
 <FloatWindow
-  title="更改颜色"
-  title-font-color="white"
-  title-bar-background-color="rgba(255, 0, 0, 1)"
+    title="更改颜色"
+    title-font-color="white"
+    title-bar-background-color="rgba(255, 0, 0, 1)"
 />
 ```
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/color.png)
+
 ## 更改样式
+
 可以直接在悬浮窗上增加样式，支持对象和字符串写法。
+
 ```vue
+
 <FloatWindow
     title="更改样式"
     :title-bar-center-style="{
@@ -52,103 +71,161 @@ title: FloatWindow
     title-bar-right-style="backgroundColor:red"
 />
 ```
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/style.png)
+
 ## 插槽插入内容
+
 ```vue
-<FloatWindow 
-    title="插槽插入内容">
-    自定义内容
-</FloatWindow>
-```
-## 插槽插入内容2
-```vue
+
 <FloatWindow
-    title="插槽插入内容2">
-        <template #titleBarLeft>
-          <span>更改左侧区域</span>
-        </template>
-        <template #titleBarCenter>
-          <span>更改中心区域</span>
-        </template>
-        <template #floatBall>
-          <span>球</span>
-        </template>
+    title="插槽插入内容">
+自定义内容
 </FloatWindow>
 ```
-## 显示网页
-通过配置`path`属性，可以在悬浮窗内显示网页(使用的是iframe方案，会有跨域问题)。
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/slot.png)
+## 插槽插入内容2
+
 ```vue
+
+<FloatWindow
+    :disabledActions="[]"
+    title="插槽插入内容2">
+<template #titleBarLeft>
+  <span>标题栏左侧区域</span>
+</template>
+<template #titleBarCenter>
+  <span>标题栏中心区域</span>
+</template>
+<template #toolbar>
+  工具栏区
+</template>
+<template #leftSidebar>
+  左侧边栏
+</template>
+<template #rightSidebar>
+  右侧边栏
+</template>
+<template #default>
+  默认内容
+</template>
+<template #footer>
+  尾栏
+</template>
+<template #floatBall>
+  <span>球</span>
+</template>
+</FloatWindow>
+```
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/slot2.png)
+## 显示网页
+
+通过配置`path`属性，可以在悬浮窗内显示网页(使用的是iframe方案，会有跨域问题)。
+
+```vue
+
 <FloatWindow
     title="显示网页"
     path="https://www.bing.com/"
 />
 ```
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/web.png)
 ## 显示网络图片
+
 通过配置`path`属性，可以直接在悬浮窗内显示网络图片(使用的是iframe方案，会有跨域问题)，
 暂时只支持网络图片
+
 ```vue
+
 <FloatWindow
     title="显示网络图片"
     path="'https://www.example.com/xxx.png'"
 />
 ```
+![](https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/assets/iamge.png)
 ## 边缘吸附
+
 组件默认开启边缘吸附功能，可以调整`edgeTolerance`属性
 ，来定义边缘吸附阈值。
+
 ```vue
+
 <FloatWindow
     title="显示网络图片"
     edge-tolerance="100"
 />
 ```
+
 ## 更改默认状态
+
 更改悬浮窗的创建后的初始状态，可以使用`default-window-size-status`属性。
+
 - `minimize`：最小化(即切换为悬浮球)
 - `maximize`：最大化
 - `normal`：正常
 - `hide`：隐藏
+
 ```vue
+
 <FloatWindow
     title="更改默认状态"
     default-window-size-status="minimize"
 />
 ```
+
 ## 禁用某些功能
+
 如果需要禁用某些功能，可以使用`disabled-actions`属性，
 对应的功能将会隐藏或禁用。
+
 ```vue
+
 <FloatWindow
     title="禁用某些功能"
     disabled-actions="['minimize','maximize','drag']"
 />
 ```
+
 ## 仅启用某些功能
+
 如果需要只需要某些功能，可以使用`actions`属性，
 当`actions`和`disabled-actions`同时存在时，
 能使用的功能集为`actions`剔除掉`disabled-actions`的集合。
+
 ```vue
+
 <FloatWindow
     title="禁用某些功能"
     actions="['minimize','maximize','drag']"
 />
 ```
+
 ### 功能集
+
 - `minimize`：最小化(即切换为悬浮球)
 - `maximize`：最大化
+- `restore`：还原
 - `drag`：拖拽
 - `resize`：调整悬浮窗大小
 - `stickToEdges`：边缘吸附
 - `close`：关闭
 - `hide`：隐藏
 - `show`：显示
+- `splitScreen`：分屏
+- `toolbar`：工具栏
+- `leftSidebar`：左边栏
+- `rightSidebar`：右边栏
+- `footer`：底栏
 
 ## 动态创建
+
 可以动态创建悬浮窗，以方便全局使用和管理。
+
 ```js
   const floatWindow = await this.$floatWindow({
-    title: new Date().getTime().toString(),
-    subtitle: '副标题',
-    subtitleFontColor: 'red'
-  })
+  title: new Date().getTime().toString(),
+  subtitle: '副标题',
+  subtitleFontColor: 'red'
+})
 
 // 调用各种方法
 const id = await floatWindow.getFloatWindowId()
@@ -158,41 +235,42 @@ console.log(id)
 // await floatWindow.hide()
 // await floatWindow.updateWindowSize({ newWidth:300, newHeight:300 })
 // await floatWindow.updateWindowPosition({ newX:50, newY:50 })
-// await floatWindow.toggleMaximize()
-// await floatWindow.toggleMinimize()
+// await floatWindow.handleMaximize()
+// await floatWindow.handleMinimize()
 // await floatWindow.closeWindow()
 ```
+
 ---
 
 ## FloatWindow 属性
 
-| 参数                      | 类型             | 默认值                                                                                 | 可选值                                                       | 描述                 |
-|-------------------------|----------------|-------------------------------------------------------------------------------------|-----------------------------------------------------------|--------------------|
-| defaultPosition         | object         | { x: 100,y: 100 }                                                                   | -                                                         | 窗口的默认位置            |
-| defaultWindowSizeStatus | string         | 'normal'                                                                            | 'normal','minimize','maximize','hide'                     | 默认窗口大小状态           |
-| defaultSize             | object         | { width: 485, height: 785 }                                                         | -                                                         | 窗口的默认尺寸            |
-| backgroundColor         | string         | '#fff'                                                                              | -                                                         | 窗口背景颜色             |
-| minSize                 | object         | { width: 400, height: 400 }                                                         | -                                                         | 窗口允许调整的最小尺寸        |
-| maxSize                 | object         | { width: Infinity, height: Infinity }                                               | -                                                         | 窗口允许调整的最大尺寸        |
-| titleBarHeight          | number         | 30                                                                                  | -                                                         | 标题栏的高度             |
-| titleBarBackgroundColor | string         | '#f3f3f3'                                                                           | -                                                         | 标题栏的背景颜色           |
-| titleBarStyle           | object/string  | -                                                                                   | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏的样式             |                                     | 标题栏的样式             |
-| title                   | string         | '悬浮窗'                                                                               | -                                                         | 窗口标题               |
-| titleFontSize           | number         | 20                                                                                  | -                                                         | 标题字体大小             |
-| titleFontColor          | string         | '#000'                                                                              | -                                                         | 标题字体颜色             |
-| subtitle                | string         | -                                                                                   | -                                                         | 窗口副标题              |
-| subtitleFontSize        | number         | 14                                                                                  | -                                                         | 副标题字体大小            |
-| subtitleFontColor       | string         | '#000'                                                                              | -                                                         | 副标题字体颜色            |
-| titleBarLeftStyle       | object/string  | -                                                                                   | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏左侧区域样式          |
-| titleBarCenterStyle     | object/string  | -                                                                                   | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏中央区域样式          |
-| titleBarRightStyle      | object/string  | -                                                                                   | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏右侧区域样式          |
-| ballHeight              | number         | 40                                                                                  | -                                                         | 悬浮球高度              |
-| ballWidth               | number         | 40                                                                                  | -                                                         | 悬浮球宽度              |
-| ballStyle               | object/ string | -                                                                                   | -                                                         | 悬浮球样式              |
-| edgeTolerance           | number         | 100                                                                                 | -                                                         | 边缘吸附阈值             |
-| actions                 | array          | ['drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'hide', 'show', 'close'] | -                                                         | 开放的功能              |
-| disabledActions         | array          | []                                                                                  | -                                                         | 禁用的功能              |
-| path                    | string         | null                                                                                | -                                                         | 窗口内容路由参数（不为空则加载路由） |
+| 参数                      | 类型            | 默认值                                                                                                                                                              | 可选值                                                       | 描述                        |
+|-------------------------|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|---------------------------|
+| defaultPosition         | object        | { x: '20vw', y: '20vh' }                                                                                                                                         | -                                                         | 窗口的默认位置(支持px,vw,vh单位)     |
+| defaultWindowSizeStatus | string        | 'normal'                                                                                                                                                         | 'normal','minimize','maximize','hide'                     | 默认窗口大小状态                  |
+| defaultSize             | object        | { width: '50vw', height: '50vh' }                                                                                                                                | -                                                         | 窗口的默认尺寸(支持px,vw,vh单位)     |
+| backgroundColor         | string        | '#fff'                                                                                                                                                           | -                                                         | 窗口背景颜色                    |
+| minSize                 | object        | { width: '20vw', height: '20vh' }                                                                                                                                | -                                                         | 窗口允许调整的最小尺寸(支持px,vw,vh单位) |
+| maxSize                 | object        | { width: '110vw', height: '110vh' }                                                                                                                              | -                                                         | 窗口允许调整的最大尺寸(支持px,vw,vh单位) |
+| titleBarHeight          | number/string | '10vh'                                                                                                                                                           | -                                                         | 标题栏的高度(支持px,vw,vh单位)      |
+| titleBarBackgroundColor | string        | '#f3f3f3'                                                                                                                                                        | -                                                         | 标题栏的背景颜色                  |
+| titleBarStyle           | object/string | -                                                                                                                                                                | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏的样式                    |                                     | 标题栏的样式             |
+| title                   | string        | '悬浮窗'                                                                                                                                                            | -                                                         | 窗口标题                      |
+| titleFontSize           | number        | 20                                                                                                                                                               | -                                                         | 标题字体大小                    |
+| titleFontColor          | string        | '#000'                                                                                                                                                           | -                                                         | 标题字体颜色                    |
+| subtitle                | string        | -                                                                                                                                                                | -                                                         | 窗口副标题                     |
+| subtitleFontSize        | number        | 14                                                                                                                                                               | -                                                         | 副标题字体大小                   |
+| subtitleFontColor       | string        | '#000'                                                                                                                                                           | -                                                         | 副标题字体颜色                   |
+| titleBarLeftStyle       | object/string | -                                                                                                                                                                | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏左侧区域样式                 |
+| titleBarCenterStyle     | object/string | -                                                                                                                                                                | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏中央区域样式                 |
+| titleBarRightStyle      | object/string | -                                                                                                                                                                | { backgroundColor: '#f3f3f3' }或backgroundColor: '#f3f3f3' | 标题栏右侧区域样式                 |
+| ballHeight              | number/string | 40                                                                                                                                                               | -                                                         | 悬浮球高度(支持px,vw,vh单位)       |
+| ballWidth               | number/string | 40                                                                                                                                                               | -                                                         | 悬浮球宽度(支持px,vw,vh单位)       |
+| ballStyle               | object/string | -                                                                                                                                                                | -                                                         | 悬浮球样式                     |
+| edgeTolerance           | number/string | 100                                                                                                                                                              | -                                                         | 边缘吸附阈值(支持px,vw,vh单位)      |
+| actions                 | array         | ['drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'restore','hide', 'show', 'close', 'footer', 'toolbar', 'leftSidebar', 'rightSidebar', 'splitScreen'] | -                                                         | 开放的功能                     |
+| disabledActions         | array         | ['footer', 'toolbar', 'leftSidebar', 'rightSidebar']                                                                                                             | -                                                         | 禁用的功能                     |
+| path                    | string        | null                                                                                                                                                             | -                                                         | 窗口内容路由参数（不为空则加载路由）        |
 
 ---
 
@@ -203,6 +281,10 @@ console.log(id)
 | floatBall      | 悬浮球内容   |
 | titleBarLeft   | 标题栏左侧区域 |
 | titleBarCenter | 标题栏中央区域 |
+| toolbar        | 工具栏     |
+| leftSidebar    | 左边栏     |
+| rightSidebar   | 右边栏     |
+| footer         | 底栏      |
 | default        | 窗口内容    |
 
 ---
@@ -239,13 +321,17 @@ console.log(id)
 | newX | <code>number</code> | -   | 最新的x坐标 |
 | newY | <code>number</code> | -   | 最新的y坐标 |
 
-### toggleMaximize
+### handleMaximize
 
-- 详情： 切换最大化和复原
+- 详情： 最大化窗口
 
-### toggleMinimize
+### handleMinimize
 
-- 详情： 切换最小化和复原
+- 详情： 最小化窗口
+
+### handleRestore
+
+- 详情： 复原窗口
 
 ### closeWindow
 
@@ -268,3 +354,4 @@ console.log(id)
 | windowStatusChange  | 悬浮窗状态改变时调用   | <code>status</code>：<code>string</code> 窗口状态;                                                                                                                                                                                                                                    |
 | dblclickFloatBall   | 双击悬浮球时调用     | -                                                                                                                                                                                                                                                                                |
 | closeWindow         | 关闭悬浮窗时调用     | -                                                                                                                                                                                                                                                                                |
+| outsideClick        | 点击悬浮窗外部时调用   | -                                                                                                                                                                                                                                                                                |

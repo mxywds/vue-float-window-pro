@@ -4,7 +4,9 @@
                v-if="type === 'component'&&
                currentComponent"
     />
-    <iframe ref="window-iframe"
+    <iframe ref="webIframe"
+            sandbox="allow-forms allow-popups allow-scripts
+             allow-modals allow-same-origin"
             :style="`height: ${height}`"
             class="iframe"
             v-if="type === 'web'"
@@ -12,12 +14,28 @@
     <div v-if="type==='none'">
       <span>空窗口</span>
     </div>
+    <div class="content-mask"
+         v-show="isResizing || isDragging"
+         :style="`height: ${height}`"/>
   </div>
 </template>
 <script>
+
 export default {
   name: 'windowContent',
   props: {
+    /**
+     * 窗口是否正在缩放
+     */
+    isResizing: {
+      type: Boolean
+    },
+    /**
+     * 窗口是否正在拖拽
+     */
+    isDragging: {
+      type: Boolean
+    },
     /**
      * 窗口路径
      */
@@ -41,7 +59,9 @@ export default {
       /**
        * 当前组件
        */
-      currentComponent: null
+      currentComponent: null,
+      iframeLoaded: false,
+      iframeUrl: null
     }
   },
   watch: {
@@ -51,6 +71,7 @@ export default {
     path: {
       immediate: true,
       handler (newPath) {
+        console.log(newPath)
         if (!newPath) {
           this.type = 'none'
           return
@@ -65,6 +86,9 @@ export default {
     }
   },
   components: {
+  },
+  mounted () {
+
   },
   methods: {
     /**
@@ -106,6 +130,12 @@ export default {
 <style lang="scss" scoped>
 .content{
   .iframe{
+    width: 100%;
+  }
+  .content-mask{
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
   }
 

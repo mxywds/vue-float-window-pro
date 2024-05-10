@@ -3,7 +3,11 @@
        :style="internalBallStyle"
   >
     <slot>
-      <img class="ball-img" src="@/assets/icon/info.png">
+      <img
+        class="ball-img"
+        :height="`${ballHeight}px`"
+        :width="`${ballWidth}px`"
+        src="@/assets/icon/info.png">
     </slot>
   </div>
 </template>
@@ -17,10 +21,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  .ball-img{
-    width: 100%;
-    height: 100%;
-  }
 }
 </style>
 <script>
