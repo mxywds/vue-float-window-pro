@@ -140,7 +140,7 @@ title: FloatWindow
     path="'https://www.example.com/xxx.png'"
 />
 ```
-![显示网络图片](../assets/iamge.png)
+![显示网络图片](../assets/image.png)
 ## 边缘吸附
 
 组件默认开启边缘吸附功能，可以调整`edgeTolerance`属性
