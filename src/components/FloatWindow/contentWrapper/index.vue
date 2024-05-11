@@ -142,26 +142,32 @@ export default {
   .toolbar{
     height: 100%;
     background-color: white;
+    overflow: auto;
+    display: flex;
+    align-items: center;
   }
-  .center-wrapper{
-    flex: 1;
     .left-sidebar{
       height: 100%;
       background-color: white;
+      overflow: auto;
     }
     .content {
       border-radius: 0 0 10px 10px;
+      height: 100%;
+      overflow: auto;
       padding: 8px;
-     background-color: white;
+      background-color: white;
     }
     .right-sidebar{
       background-color: white;
       height: 100%;
+      overflow: auto;
     }
-  }
   .footer{
     background-color: white;
-    height: 100%;
+    overflow: auto;
+    display: flex;
+    align-items: center;
   }
 
 }

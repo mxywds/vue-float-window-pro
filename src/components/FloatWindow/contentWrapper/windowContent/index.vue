@@ -1,5 +1,5 @@
 <template>
-  <div class="content">
+  <div class="window-content">
     <component :is="currentComponent"
                v-if="type === 'component'&&
                currentComponent"
@@ -7,7 +7,7 @@
     <iframe ref="webIframe"
             sandbox="allow-forms allow-popups allow-scripts
              allow-modals allow-same-origin"
-            :style="`height: ${height}`"
+            :style="`height: calc(${height} - 10px)`"
             class="iframe"
             v-if="type === 'web'"
             :src="path"/>
@@ -81,7 +81,7 @@ export default {
           return
         }
         this.type = 'component'
-        this.loadComponent(newPath)
+        //        this.loadComponent(newPath)
       }
     }
   },
@@ -91,44 +91,44 @@ export default {
 
   },
   methods: {
-    /**
-     * 根据path参数动态加载组件
-     * todo 加载路由待实现
-     * @param newPath
-     * @returns {Promise<void>}
-     */
-    async loadComponent (newPath) {
-      try {
-        // 根据路径动态加载组件
-        this.currentComponent = await this.resolveComponent(newPath)
-      } catch (error) {
-        console.error(`失败加载组件： ${newPath}:`, error)
-        this.currentComponent = null
-      }
-    },
-    /**
-     * 根据路径动态加载组件
-     * @param path
-     * @returns {Promise<*>}
-     */
-    async resolveComponent (path) {
-      const component = await this.loadView(path)
-      console.log(component)
-      return component.default
-    },
-    /**
-     * 加载组件
-     * @param view
-     * @returns {Promise<function(*): Promise<any>>}
-     */
-    async loadView (view) {
-      return async (resolve) => await require([`@/views/app/${view}.vue`], resolve)
-    }
+    // /**
+    //  * 根据path参数动态加载组件
+    //  * todo 加载路由待实现
+    //  * @param newPath
+    //  * @returns {Promise<void>}
+    //  */
+    // async loadComponent (newPath) {
+    //   try {
+    //     // 根据路径动态加载组件
+    //     this.currentComponent = await this.resolveComponent(newPath)
+    //   } catch (error) {
+    //     console.error(`失败加载组件： ${newPath}:`, error)
+    //     this.currentComponent = null
+    //   }
+    // },
+    // /**
+    //  * 根据路径动态加载组件
+    //  * @param path
+    //  * @returns {Promise<*>}
+    //  */
+    // async resolveComponent (path) {
+    //   const component = await this.loadView(path)
+    //   console.log(component)
+    //   return component.default
+    // },
+    // /**
+    //  * 加载组件
+    //  * @param view
+    //  * @returns {Promise<function(*): Promise<any>>}
+    //  */
+    // async loadView (view) {
+    //   return async (resolve) => await require([`@/views/app/${view}.vue`], resolve)
+    // }
   }
 }
 </script>
 <style lang="scss" scoped>
-.content{
+.window-content{
   .iframe{
     width: 100%;
   }

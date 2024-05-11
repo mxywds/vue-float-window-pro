@@ -217,8 +217,8 @@ export default {
           ? `${window.innerHeight - this._convertToPx(this.titleBarHeight)}px`
           : `${this.windowState.height}px`,
         contentHeight: this.windowSizeStatus === 'maximize'
-          ? `${window.innerHeight - this._convertToPx(this.titleBarHeight) - 48}px`
-          : `${this.windowState.height - this._convertToPx(this.titleBarHeight) - 48}px`,
+          ? `${window.innerHeight - this._convertToPx(this.titleBarHeight) - 12}px`
+          : `${this.windowState.height - this._convertToPx(this.titleBarHeight) - 12}px`,
         zIndex: this.windowState.zIndex
       }
     },
