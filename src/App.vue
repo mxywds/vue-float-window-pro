@@ -1,103 +1,45 @@
 <template>
   <div id="app">
-    <div>
-
-      <!--      记事本-->
+    <div class="page">
+<!--      介绍-->
+      <h1>组件介绍</h1>
       <FloatWindow
-        class="file-window"
-        :default-size="{width: '60vw', height: '60vh'}"
-        :disabledActions="['rightSidebar','leftSidebar']"
-        title="记事本(演示)">
-        <template #titleBarLeft>
-          <i class="el-icon-document"/>
-        </template>
-        <template #toolbar>
-          <div class="demo-toolbar-notepad">
-            <span>文件</span>
-            <span>编辑</span>
-            <span>查看</span>
-          </div>
-        </template>
-        <template #default>
-          <div class="textarea-wrapper">
-            <el-input
-              class="textarea"
-              type="textarea"
-              :rows="20"
-              placeholder="请输入内容"
-              v-model="demoTextarea">
-            </el-input>
-          </div>
-        </template>
-        <template #footer>
-          <div class="demo-footer">{{demoTextarea.length}}个字符</div>
-        </template>
-        <template #floatBall>
-          <i class="el-icon-edit"/>
-        </template>
+        @beforeClose="handleClose"
+        parent-limitation
+        title="vue-float-window-pro">
+        <h1>vue 悬浮窗解决方案</h1>
+        <p>用vue-float-window-pro快速创建悬浮窗</p>
+        <p>作者：<a href="https://gitee.com/mxywds/" target="_blank">Lowell</a></p>
+        <p>项目地址：<a href="https://gitee.com/mxywds/vue-float-window-pro/" target="_blank">请点击跳转</a></p>
+        <p>项目文档：<a href="https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/components/floatWindow.md" target="_blank">请点击跳转</a></p>
       </FloatWindow>
-<!--      图片浏览-->
+    </div>
+    <div class="page">
+      <h1>设计理念</h1>
+      <!--      设计理念-->
       <FloatWindow
-        title="图片浏览(演示)"
-        ball-width="60"
-        ball-height="60"
-      >
-        <template #titleBarLeft>
-          <div class="demo-title-bar-left-image">
-            <i class="el-icon-arrow-left"/>
-            <i class="el-icon-arrow-right"/>
-            <el-divider direction="vertical"/>
-            <i class="el-icon-zoom-in"/>
-            <i class="el-icon-zoom-out"/>
-            <i class="el-icon-c-scale-to-original"/>
-            <el-divider direction="vertical"/>
-            <i class="el-icon-edit-outline"/>
-            <el-divider direction="vertical"/>
-            <i class="el-icon-download"/>
-          </div>
-        </template>
-        <template #default>
-          <el-image
-            :src="example"/>
-        </template>
-        <template #floatBall>
-          <el-image
-            style="border-radius: 100px"
-            :src="example"/>
-        </template>
+        @beforeClose="handleClose"
+        parent-limitation
+        title="设计理念">
+        <div>
+          <h2>简单至上</h2>
+          <p>简单的API，开箱即用</p>
+          <h2>兼容性好</h2>
+          <p>支持触屏设备和大部分浏览器</p>
+          <h2>低依赖</h2>
+          <p>不依赖于element等其他框架</p>
+          <h2>定制化</h2>
+          <p>定制化程度高</p>
+        </div>
       </FloatWindow>
-<!--      浏览器-->
+    </div>
+    <div class="page">
+      <h1>效果演示</h1>
+      <h2>文件管理</h2>
+      <!--      文件管理-->
       <FloatWindow
-        title="浏览器(演示)"
-        :disabledActions="['rightSidebar','footer','leftSidebar']"
-        :default-size="{width: '60vw', height: '60vh'}"
-        :path="demoPath">
-        <template #titleBarLeft>
-          <div class="demo-title-bar-left">
-            <i class="el-icon-user"/>
-            <i class="el-icon-files"/>
-          </div>
-        </template>
-        <template #toolbar>
-          <div class="demo-web-toolbar">
-            <div class="icons-left">
-              <i class="el-icon-arrow-left"/>
-              <i class="el-icon-refresh"/>
-            </div>
-            <el-input v-model="demoPath"  prefix-icon="el-icon-search" placeholder="搜索一下..."/>
-            <div class="icons-right">
-              <i class="el-icon-star-off"/>
-              <i class="el-icon-download"/>
-              <i class="el-icon-more-outline"/>
-            </div>
-          </div>
-        </template>
-        <template #floatBall>
-          <i class="el-icon-monitor"/>
-        </template>
-      </FloatWindow>
-<!--      文件管理-->
-      <FloatWindow
+        parent-limitation
+        @beforeClose="handleClose"
         :disabledActions="[]"
         :default-size="{width: '60vw', height: '60vh'}"
         title="文件管理(演示)">
@@ -180,35 +122,156 @@
           <i class="el-icon-folder"/>
         </template>
       </FloatWindow>
-<!--      设计理念-->
-      <FloatWindow
-        title="设计理念">
-        <div>
-          <h2>简单至上</h2>
-          <p>简单的API，开箱即用</p>
-          <h2>兼容性好</h2>
-          <p>支持触屏设备和大部分浏览器</p>
-          <h2>低依赖</h2>
-          <p>不依赖于element等其他框架</p>
-          <h2>定制化</h2>
-          <p>定制化程度高</p>
-        </div>
-      </FloatWindow>
-<!--      介绍-->
-      <FloatWindow
-        title="vue-float-window-pro">
-        <h1>vue 悬浮窗解决方案</h1>
-        <p>用vue-float-window-pro快速创建悬浮窗</p>
-        <p>作者：<a href="https://gitee.com/mxywds/" target="_blank">Lowell</a></p>
-        <p>项目地址：<a href="https://gitee.com/mxywds/vue-float-window-pro/" target="_blank">请点击跳转</a></p>
-        <p>项目文档：<a href="https://gitee.com/mxywds/vue-float-window-pro/blob/master/docs/components/floatWindow.md" target="_blank">请点击跳转</a></p>
-      </FloatWindow>
-
     </div>
+    <div class="page">
+      <h1>效果演示</h1>
+      <h2>浏览器</h2>
+      <!--      浏览器-->
+      <FloatWindow
+        @beforeClose="handleClose"
+        parent-limitation
+        title="浏览器(演示)"
+        :disabledActions="['rightSidebar','footer','leftSidebar']"
+        :default-size="{width: '60vw', height: '60vh'}"
+        :path="demoPath">
+        <template #titleBarLeft>
+          <div class="demo-title-bar-left">
+            <i class="el-icon-user"/>
+            <i class="el-icon-files"/>
+          </div>
+        </template>
+        <template #toolbar>
+          <div class="demo-web-toolbar">
+            <div class="icons-left">
+              <i class="el-icon-arrow-left"/>
+              <i class="el-icon-refresh"/>
+            </div>
+            <el-input v-model="demoPath"  prefix-icon="el-icon-search" placeholder="搜索一下..."/>
+            <div class="icons-right">
+              <i class="el-icon-star-off"/>
+              <i class="el-icon-download"/>
+              <i class="el-icon-more-outline"/>
+            </div>
+          </div>
+        </template>
+        <template #floatBall>
+          <i class="el-icon-monitor"/>
+        </template>
+      </FloatWindow>
+    </div>
+    <div class="page">
+      <h1>效果演示</h1>
+      <h2>图片浏览</h2>
+      <!--      图片浏览-->
+      <FloatWindow
+        @beforeClose="handleClose"
+        parent-limitation
+        title="图片浏览(演示)"
+        ball-width="60"
+        ball-height="60"
+      >
+        <template #titleBarLeft>
+          <div class="demo-title-bar-left-image">
+            <i class="el-icon-arrow-left"/>
+            <i class="el-icon-arrow-right"/>
+            <el-divider direction="vertical"/>
+            <i class="el-icon-zoom-in"/>
+            <i class="el-icon-zoom-out"/>
+            <i class="el-icon-c-scale-to-original"/>
+            <el-divider direction="vertical"/>
+            <i class="el-icon-edit-outline"/>
+            <el-divider direction="vertical"/>
+            <i class="el-icon-download"/>
+          </div>
+        </template>
+        <template #default>
+          <el-image
+            :src="example"/>
+        </template>
+        <template #floatBall>
+          <el-image
+            style="border-radius: 100px"
+            :src="example"/>
+        </template>
+      </FloatWindow>
+    </div>
+    <div class="page">
+      <h1>效果演示</h1>
+      <h2>记事本</h2>
+      <!--      记事本-->
+      <FloatWindow
+        @beforeClose="handleClose"
+        parent-limitation
+        class="file-window"
+        :default-size="{width: '60vw', height: '60vh'}"
+        :disabledActions="['rightSidebar','leftSidebar']"
+        title="记事本(演示)">
+        <template #titleBarLeft>
+          <i class="el-icon-document"/>
+        </template>
+        <template #toolbar>
+          <div class="demo-toolbar-notepad">
+            <span>文件</span>
+            <span>编辑</span>
+            <span>查看</span>
+          </div>
+        </template>
+        <template #default>
+          <div class="textarea-wrapper">
+            <el-input
+              class="textarea"
+              type="textarea"
+              :rows="20"
+              placeholder="请输入内容"
+              v-model="demoTextarea">
+            </el-input>
+          </div>
+        </template>
+        <template #footer>
+          <div class="demo-footer">{{demoTextarea.length}}个字符</div>
+        </template>
+        <template #floatBall>
+          <i class="el-icon-edit"/>
+        </template>
+      </FloatWindow>
+    </div>
+    <FloatWindow
+      @beforeClose="handleClose"
+      title="帮助文档"
+      affix
+      :parent-limitation="false"
+      :default-size="{
+      width: '30vw',
+      height: '30vw'
+      }"
+      :default-position="{
+        x: '65vw', y: '30vh'
+      }"
+    >
+      <div class="language-markup"
+           v-highlight
+           v-html="markdown">
+      </div>
+    </FloatWindow>
   </div>
 </template>
 
 <style lang="scss" scoped>
+#app{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap:20px;
+  .page{
+    border-radius: 18px;
+    height: 90vh;
+    width: 90%;
+    border-style: solid;
+    padding: 20px;
+
+  }
+}
 .demo-title-bar-left{
   display: flex;
   flex-direction: row;
@@ -362,13 +425,18 @@
 
 </style>
 <script>
+import showdown from 'showdown'
 import FloatWindow from '@/components/FloatWindow/index.vue'
 import example from '@/assets/example.png'
+import helpMd from '../public/docs/md/help.md'
+
 export default {
   components: { FloatWindow },
   data () {
     return {
       example,
+      markdown: '',
+      helpMd,
       demoInput: null,
       demoTextarea: '',
       demoPath: 'https://www.bing.com/',
@@ -428,6 +496,33 @@ export default {
         }]
       }]
     }
+  },
+  methods: {
+    async handleClose (done) {
+      await this.$alert('确定关闭悬浮窗吗', '提示', {
+        confirmButtonText: '确定',
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      done()
+    },
+    htmlUnescape (str) {
+      if (!str) {
+        return ''
+      }
+      return str.replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+    }
+  },
+  async mounted () {
+    const converter = new showdown.Converter()
+    const text = this.helpMd.toString()
+    const encoded = converter.makeHtml(text)
+    this.markdown = this.htmlUnescape(encoded)
   }
 }
 </script>

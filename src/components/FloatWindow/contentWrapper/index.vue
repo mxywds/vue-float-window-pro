@@ -2,7 +2,7 @@
   <div class="content-wrapper">
     <split-pane
       split="horizontal"
-      :hide-l="!isActionEnable('toolbar')"
+      :hide-l="!$slots.toolbar"
       :default-percent="10">
       <template #paneL>
         <!-- 工具栏 -->
@@ -15,12 +15,12 @@
       <template #paneR>
         <split-pane
           split="horizontal"
-          :hide-r="!isActionEnable('footer')"
+          :hide-r="!$slots.footer"
           :default-percent="90">
           <template #paneL>
             <split-pane
               split="vertical"
-              :hide-l="!isActionEnable('leftSidebar')"
+              :hide-l="!$slots.leftSidebar"
               class="center-wrapper"
               :default-percent="20">
               <template #paneL>
@@ -34,7 +34,7 @@
               <template #paneR>
                 <split-pane
                   split="vertical"
-                  :hide-r="!isActionEnable('rightSidebar')"
+                  :hide-r="!$slots.rightSidebar"
                   :default-percent="75">
                   <template #paneL>
                     <!-- 中央窗口 -->

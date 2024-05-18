@@ -13,15 +13,15 @@ export default {
      */
     actions: {
       type: Array,
-      default: () => ['drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'restore',
-        'hide', 'show', 'close', 'footer', 'toolbar', 'leftSidebar', 'rightSidebar', 'splitScreen']
+      default: () => ['top', 'drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'restore',
+        'hide', 'show', 'close', 'splitScreen']
     },
     /**
      * 禁用的功能(优先级高)
      */
     disabledActions: {
       type: Array,
-      default: () => ['footer', 'toolbar', 'leftSidebar', 'rightSidebar']
+      default: () => []
     },
     /**
      * 窗口内容路由参数（不为空则加载路由）
@@ -29,6 +29,20 @@ export default {
     path: {
       type: String,
       default: null
+    },
+    /**
+     * 是否限制在父div里拖动
+     */
+    parentLimitation: {
+      type: Boolean,
+      default: true
+    },
+    /**
+     * 窗口是否固定
+     */
+    affix: {
+      type: Boolean,
+      default: false
     }
   },
   data () {

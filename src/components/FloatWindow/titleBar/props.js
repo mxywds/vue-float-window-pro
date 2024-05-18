@@ -25,8 +25,7 @@ export default {
      * 窗口标题
      */
     title: {
-      type: String,
-      default: '悬浮窗'
+      type: String
     },
     /**
      * 标题字体大小

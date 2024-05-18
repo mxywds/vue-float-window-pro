@@ -4,8 +4,8 @@
       v-show="windowSizeStatus==='minimize'"
       :internal-ball-style="internalBallStyle"
       :style="ballStyle"
-      :ball-height="_convertToPx(ballHeight)"
-      :ball-width="_convertToPx(ballWidth)"
+      :ball-height="_convertToPx(ballHeight,true)"
+      :ball-width="_convertToPx(ballWidth,false)"
       @mousedown.native="_startDrag"
       @touchstart.native="_startTouchDrag"
       @click.native="_handleClickFloatBall"
@@ -24,7 +24,6 @@
       :style="internalWindowStyle"
       @click="_handleClickFloatWindow"
     >
-
       <!-- 标题栏 -->
         <title-bar
           :actions="actions"
@@ -36,13 +35,15 @@
           :subtitle-font-size="subtitleFontSize"
           :subtitle-font-color="subtitleFontColor"
           :window-size-status="windowSizeStatus||'normal'"
-          :title-bar-height="_convertToPx(titleBarHeight)"
+          :title-bar-height="_convertToPx(titleBarHeight,true)"
           :title-bar-background-color="titleBarBackgroundColor"
           :title-bar-left-style="titleBarLeftStyle"
           :title-bar-center-style="titleBarCenterStyle"
           :title-bar-right-style="titleBarRightStyle"
           :title-bar-background-style="titleBarStyle"
+          :is-top="isTop"
           @mousedown.native="_startDrag"
+          @handleTop="handleTop"
           @handleMinimize="handleMinimize"
           @handleMaximize="handleMaximize"
           @handleRestore="handleRestore"
@@ -133,6 +134,7 @@ import windowProps from '@/components/FloatWindow/props'
 import TitleBar from '@/components/FloatWindow/titleBar/index.vue'
 import FloatBall from '@/components/FloatWindow/floatBall/index.vue'
 import ContentWrapper from '@/components/FloatWindow/contentWrapper/index.vue'
+
 export default {
   mixins: [titleBarProps, actionProps, ballProps, contentProps, windowProps],
   name: 'FloatWindow',
@@ -141,12 +143,14 @@ export default {
   },
   mounted () {
     this.windowId = this._generateUUID()
-    document.addEventListener('click', this.handleOutsideClick)
+    this._updateParentElementState()
+    document.addEventListener('click', this._handleOutsideClick)
+    window.addEventListener('resize', this._handleOutsideResize)
   },
   emits: ['outsideClick', 'clickFloatWindow', 'clickFloatBall', 'rightClickFloatBall',
     'startDrag', 'stopDrag', 'startResize',
     'resize', 'stopResize', 'windowStatusChange',
-    'dblclickFloatBall', 'closeWindow'],
+    'dblclickFloatBall', 'closeWindow', 'beforeClose'],
   data () {
     return {
       /**
@@ -166,6 +170,10 @@ export default {
        */
       isResizing: false,
       /**
+       * 窗口是否置顶
+       */
+      isTop: false,
+      /**
        * 调整大小的方向
        */
       resizeDirection: null,
@@ -177,12 +185,28 @@ export default {
        * 存储窗口的状态信息
        */
       windowState: {
-        x: this._convertToPx(this.defaultPosition.x),
-        y: this._convertToPx(this.defaultPosition.y),
-        width: this._convertToPx(this.defaultSize.width),
-        height: this._convertToPx(this.defaultSize.height),
+        x: this._convertToPx(this.defaultPosition.x, false),
+        y: this._convertToPx(this.defaultPosition.y, true),
+        width: this._convertToPx(this.defaultSize.width, false),
+        height: this._convertToPx(this.defaultSize.height, true),
         zIndex: 20
       },
+      /**
+       * 父元素高度
+       */
+      parentElementHeight: window.innerHeight,
+      /**
+       * 父元素宽度
+       */
+      parentElementWidth: window.innerWidth,
+      /**
+       * 父元素X坐标
+       */
+      parentElementX: 0,
+      /**
+       * 父元素Y坐标
+       */
+      parentElementY: 0,
       /**
        * 记录鼠标按下时的位置，用于计算拖动或调整大小的偏移量
        */
@@ -203,22 +227,21 @@ export default {
     ...mapState('floatWindow', ['maxZIndex']),
     /**
      * 计算窗口的样式
-     * @returns {{top: (string|string), left: (string|string),
-     * width: (string|string), position: (string), height: string,
-     * contentHeight: string, zIndex: number}}
+     * @returns {{top: (string|string), left: (string|string), width: (string|string), position: (string)
+     * , height: string, contentHeight: string, zIndex: number}}
      */
     internalWindowStyle () {
       return {
-        position: this.windowSizeStatus === 'maximize' ? 'fixed' : 'absolute',
-        left: this.windowSizeStatus === 'maximize' ? '0' : `${this.windowState.x}px`,
-        top: this.windowSizeStatus === 'maximize' ? '0' : `${this.windowState.y}px`,
-        width: this.windowSizeStatus === 'maximize' ? '100vw' : `${this.windowState.width}px`,
+        position: !this.parentLimitation && this.affix ? 'fixed' : 'absolute',
+        left: this.windowSizeStatus === 'maximize' ? `${this.parentElementX}px` : `${this.windowState.x}px`,
+        top: this.windowSizeStatus === 'maximize' ? `${this.parentElementY}px` : `${this.windowState.y}px`,
+        width: this.windowSizeStatus === 'maximize' ? `${this.parentElementWidth}px` : `${this.windowState.width}px`,
         height: this.windowSizeStatus === 'maximize'
-          ? `${window.innerHeight - this._convertToPx(this.titleBarHeight)}px`
+          ? `${this.parentElementHeight - this._convertToPx(this.titleBarHeight, true)}px`
           : `${this.windowState.height}px`,
         contentHeight: this.windowSizeStatus === 'maximize'
-          ? `${window.innerHeight - this._convertToPx(this.titleBarHeight) - 12}px`
-          : `${this.windowState.height - this._convertToPx(this.titleBarHeight) - 12}px`,
+          ? `${this.parentElementHeight - this._convertToPx(this.titleBarHeight, true) - 12}px`
+          : `${this.windowState.height - this._convertToPx(this.titleBarHeight, true) - 12}px`,
         zIndex: this.windowState.zIndex
       }
     },
@@ -228,6 +251,7 @@ export default {
      */
     internalBallStyle () {
       return {
+        position: !this.parentLimitation && this.affix ? 'fixed' : 'absolute',
         height: `${this.ballHeight}px`,
         width: `${this.ballWidth}px`,
         left: `${this.windowState.x}px`,
@@ -240,19 +264,40 @@ export default {
      * @returns {{width: string, height: string}}
      */
     screenMaskStyle () {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+
       const currentAzimuth = this.currentAzimuth
       const {
         x: windowX, y: windowY,
         width: windowWidth, height: windowHeight
       } = this.windowState
+
       const nullStatus = {
         display: 'none',
         width: '0px',
         height: '0px',
         top: '0px',
         left: '0px'
+      }
+
+      const parentElement = this.$el?.parentElement
+      if (!parentElement) {
+        return nullStatus
+      }
+      const rect = parentElement.getBoundingClientRect()
+      let parentElementX = rect.left
+      let parentElementY = rect.top
+      if (!this.parentLimitation) {
+        parentElementX = 0
+        parentElementY = 0
+      }
+      const maximizeStatus = {
+        display: 'block',
+        width: `${parentElementWidth}px`,
+        height: `${parentElementHeight}px`,
+        top: `${parentElementY}px`,
+        left: `${parentElementX}px`
       }
       // 全屏状态下，不提示
       if (this.windowSizeStatus === 'maximize') {
@@ -261,57 +306,51 @@ export default {
       // 调整大小状态(补齐提示)
       if (this.isResizing) {
         // 全屏补齐
-        if (windowWidth > 0.8 * screenWidth &&
-          windowHeight > 0.8 * screenHeight &&
+        if (windowWidth > 0.8 * parentElementWidth &&
+          windowHeight > 0.8 * parentElementHeight &&
           this.resizeDirection.includes('-')) {
-          return {
-            display: 'block',
-            width: '100vw',
-            height: '100vh',
-            top: '0vh',
-            left: '0vw'
-          }
+          return maximizeStatus
         }
 
         // 上下两侧补齐
-        if (windowHeight > 0.8 * screenHeight &&
+        if (windowHeight > 0.8 * parentElementHeight &&
           (this.resizeDirection === 'top' ||
             this.resizeDirection === 'bottom')) {
           return {
             display: 'block',
-            width: windowWidth + 'px',
-            height: screenHeight + 'px',
-            top: '0px',
-            left: windowX + 'px'
+            width: `${windowWidth}px`,
+            height: `${parentElementHeight}px`,
+            top: `${parentElementY}px`,
+            left: `${windowX}px`
           }
         }
         // 左右两侧补齐
-        if (windowWidth > 0.8 * screenWidth &&
+        if (windowWidth > 0.8 * parentElementWidth &&
           (this.resizeDirection === 'left' ||
             this.resizeDirection === 'right')) {
           return {
             display: 'block',
-            width: screenWidth + 'px',
-            height: windowHeight + 'px',
-            top: windowY + 'px',
-            left: '0px'
+            width: `${parentElementWidth}px`,
+            height: `${windowHeight}px`,
+            top: `${windowY}px`,
+            left: `${parentElementX}px`
           }
         }
 
         // todo 边缘补齐和对角补齐
-        // if (windowX + windowWidth > 0.8 * screenWidth &&
+        // if (windowX + windowWidth > 0.8 * parentElementWidth &&
         //   this.resizeDirection === 'right') {
         //   console.log('右边缘补齐')
         //   return {
         //     display: 'block',
-        //     width: (screenWidth - windowX) + 'px',
+        //     width: (parentElementWidth - windowX) + 'px',
         //     height: windowHeight + 'px',
         //     top: windowY + 'px',
         //     left: windowX + 'px'
         //   }
         // }
         //
-        // if (windowX < 0.2 * screenWidth &&
+        // if (windowX < 0.2 * parentElementWidth &&
         //   this.resizeDirection === 'left') {
         //   console.log('左边缘补齐')
         //   return {
@@ -323,18 +362,18 @@ export default {
         //   }
         // }
         //
-        // if (windowY + windowHeight > 0.8 * screenHeight &&
+        // if (windowY + windowHeight > 0.8 * parentElementHeight &&
         //   this.resizeDirection === 'bottom') {
         //   console.log('下边缘补齐')
         //   return {
         //     display: 'block',
         //     width: windowWidth + 'px',
-        //     height: (screenHeight - windowY) + 'px',
+        //     height: (parentElementHeight - windowY) + 'px',
         //     top: windowY + 'px',
         //     left: windowX + 'px'
         //   }
         // }
-        // if (windowY < 0.2 * screenHeight &&
+        // if (windowY < 0.2 * parentElementHeight &&
         //   this.resizeDirection === 'top') {
         //   console.log('上边缘补齐')
         //   return {
@@ -360,78 +399,72 @@ export default {
       if (currentAzimuth === 'left') {
         return {
           display: 'block',
-          top: '0px',
-          left: '0px',
-          height: screenHeight + 'px',
-          width: screenWidth / 2 + 'px'
+          top: `${parentElementY}px`,
+          left: `${parentElementX}px`,
+          height: `${parentElementHeight}px`,
+          width: `${parentElementWidth / 2}px`
         }
       }
 
       if (currentAzimuth === 'right') {
         return {
           display: 'block',
-          top: '0px',
-          left: screenWidth / 2 + 'px',
-          height: screenHeight + 'px',
-          width: screenWidth / 2 + 'px'
+          top: `${parentElementY}px`,
+          left: `${parentElementX + (parentElementWidth / 2)}px`,
+          height: `${parentElementHeight}px`,
+          width: `${parentElementWidth / 2}px`
         }
       }
 
       if (currentAzimuth === 'top') {
-        return {
-          display: 'block',
-          width: '100vw',
-          height: '100vh',
-          top: '0vh',
-          left: '0vw'
-        }
+        return maximizeStatus
       }
       if (currentAzimuth === 'bottom') {
         return {
           display: 'block',
-          top: screenHeight / 2 + 'px',
-          left: '0px',
-          height: screenHeight / 2 + 'px',
-          width: screenWidth + 'px'
+          top: `${parentElementY + (parentElementHeight / 2)}px`,
+          left: `${parentElementX}px`,
+          height: `${parentElementHeight / 2}px`,
+          width: `${parentElementWidth}px`
         }
       }
 
       if (currentAzimuth === 'top-left') {
         return {
           display: 'block',
-          top: '0px',
-          left: '0px',
-          height: screenHeight / 2 + 'px',
-          width: screenWidth / 2 + 'px'
+          top: `${parentElementY}px`,
+          left: `${parentElementX}px`,
+          height: `${parentElementHeight / 2}px`,
+          width: `${parentElementWidth / 2}px`
         }
       }
 
       if (currentAzimuth === 'top-right') {
         return {
           display: 'block',
-          top: '0px',
-          left: screenWidth / 2 + 'px',
-          height: screenHeight / 2 + 'px',
-          width: screenWidth / 2 + 'px'
+          top: `${parentElementY}px`,
+          left: `${parentElementX + (parentElementWidth / 2)}px`,
+          height: `${parentElementHeight / 2}px`,
+          width: `${parentElementWidth / 2}px`
         }
       }
 
       if (currentAzimuth === 'bottom-left') {
         return {
           display: 'block',
-          top: screenHeight / 2 + 'px',
-          left: '0px',
-          height: screenHeight / 2 + 'px',
-          width: screenWidth / 2 + 'px'
+          top: `${parentElementY + (parentElementHeight / 2)}px`,
+          left: `${parentElementX}px`,
+          height: `${parentElementHeight / 2}px`,
+          width: `${parentElementWidth / 2}px`
         }
       }
       if (currentAzimuth === 'bottom-right') {
         return {
           display: 'block',
-          top: screenHeight / 2 + 'px',
-          left: screenWidth / 2 + 'px',
-          height: screenHeight / 2 + 'px',
-          width: screenWidth / 2 + 'px'
+          top: `${parentElementY + (parentElementHeight / 2)}px`,
+          left: `${parentElementX + (parentElementWidth / 2)}px`,
+          height: `${parentElementHeight / 2}px`,
+          width: `${parentElementWidth / 2}px`
         }
       }
 
@@ -441,28 +474,29 @@ export default {
      * 当前位于屏幕的哪个方位
      */
     currentAzimuth () {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const parentElementX = this.parentElementX
+      const parentElementY = this.parentElementY
 
       let { x, y, width, height } = this.windowState
 
       if (this.windowSizeStatus === 'minimize') {
-        x = this._convertToPx(this.ballWidth)
-        y = this._convertToPx(this.ballHeight)
+        x = this._convertToPx(this.ballWidth, false)
+        y = this._convertToPx(this.ballHeight, true)
       }
-
       let horizontal = null
       let vertical = null
 
-      if (y < 10) {
+      if (y < parentElementY + 10) {
         vertical = 'top'
-      } else if (y > screenHeight - height - 10) {
+      } else if (y > parentElementY + parentElementHeight - height - 10) {
         vertical = 'bottom'
       }
 
-      if (x < 10) {
+      if (x < parentElementX + 10) {
         horizontal = 'left'
-      } else if (x > screenWidth - width - 10) {
+      } else if (x > parentElementX + parentElementWidth - width - 10) {
         horizontal = 'right'
       }
       if (vertical && horizontal) {
@@ -517,16 +551,19 @@ export default {
     /**
      * 将尺寸值转换为像素值
      * @param sizeValue
+     * @param isHeight
      * @returns {*|number}
      * @private
      */
-    _convertToPx (sizeValue) {
+    _convertToPx (sizeValue, isHeight = false) {
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
       if (typeof sizeValue === 'number') {
         // 如果宽度已经是数字，则假定为像素值，无需转换
         return sizeValue
       } else if (typeof sizeValue === 'string') {
         // 正则表达式匹配字符串中的数字部分
-        const match = sizeValue.match(/(\d+(\.\d+)?)\s*(px|vw|vh)/)
+        const match = sizeValue.match(/(\d+(\.\d+)?)\s*(px|vw|vh|%)/)
         if (match) {
           const value = parseFloat(match[1]) // 提取匹配的数字部分并转换为浮点数
           const unit = match[3] // 提取匹配的单位
@@ -535,15 +572,48 @@ export default {
               return value // 如果单位已经是像素，则无需转换
             case 'vw':
               // 根据视口宽度进行转换
-              return (value * window.innerWidth / 100)
+              return (value * screenWidth / 100)
             case 'vh':
               // 根据视口高度进行转换
-              return (value * window.innerHeight / 100)
+              return (value * screenHeight / 100)
+            case '%': {
+              if (isHeight) {
+                const parentElementHeight = this.parentElementHeight
+                return (value * parentElementHeight / 100)
+              }
+              const parentElementWidth = this.parentElementWidth
+              return (value * parentElementWidth / 100)
+            }
           }
         }
       }
       // 如果无法匹配或不是支持的单位，则返回原始值
       return sizeValue
+    },
+    /**
+     * 更新父元素状态
+     * @private
+     */
+    _updateParentElementState () {
+      this.$nextTick(() => {
+        if (!this.parentLimitation) {
+          return
+        }
+        const parentElement = this.$el?.parentElement
+        if (!parentElement) {
+          return
+        }
+        // 获取目标元素的边界信息
+        const elementRect = parentElement.getBoundingClientRect()
+        const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+        const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
+        this.parentElementX = elementRect.left + scrollLeft
+        this.parentElementY = elementRect.top + scrollTop
+        this.windowState.x = this.parentElementX + this._convertToPx(this.defaultPosition.x, false)
+        this.windowState.y = this.parentElementY + this._convertToPx(this.defaultPosition.y, true)
+        this.parentElementWidth = elementRect.width
+        this.parentElementHeight = elementRect.height
+      })
     },
     /**
      * 创建窗口
@@ -575,10 +645,10 @@ export default {
     _windowSizeCheck ({ width, height }) {
       let { width: minWidth, height: minHeight } = this.minSize
       let { width: maxWidth, height: maxHeight } = this.maxSize
-      minWidth = this._convertToPx(minWidth)
-      maxWidth = this._convertToPx(maxWidth)
-      minHeight = this._convertToPx(minHeight)
-      maxHeight = this._convertToPx(maxHeight)
+      minWidth = this._convertToPx(minWidth, false)
+      maxWidth = this._convertToPx(maxWidth, false)
+      minHeight = this._convertToPx(minHeight, true)
+      maxHeight = this._convertToPx(maxHeight, true)
 
       // 确保不超出最小值和最大值
       width = Math.max(minWidth, width)
@@ -588,10 +658,17 @@ export default {
       return { width, height }
     },
     /**
+     * 处理外部调整大小
+     */
+    _handleOutsideResize () {
+      console.log('触发了外部调整大小')
+      this._updateParentElementState()
+    },
+    /**
      * 处理外部点击事件
      * @param event
      */
-    handleOutsideClick (event) {
+    _handleOutsideClick (event) {
       if (this.windowSizeStatus !== 'normal' ||
         this.windowSizeStatus !== 'splitScreen' ||
       this.windowSizeStatus !== 'minimize') {
@@ -615,6 +692,9 @@ export default {
        * @event clickFloatWindow
        */
       this.$emit('clickFloatWindow')
+      if (this.isTop) {
+        return
+      }
       // 更新ZIndex
       const newMaxZIndex = this.maxZIndex + 1
       this.windowState.zIndex = newMaxZIndex
@@ -695,11 +775,9 @@ export default {
       // 计算偏移量
       const deltaX = event.clientX - this.startPosition.x
       const deltaY = event.clientY - this.startPosition.y
-
       // 更新窗口的新位置
       const newX = this.windowState.x + deltaX
       const newY = this.windowState.y + deltaY
-
       // 应用边界检查
       this._applyBoundaryCheck(newX, newY)
 
@@ -759,37 +837,39 @@ export default {
      * @private
      */
     _applyBoundaryCheck (newX, newY) {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const parentElementX = this.parentElementX
+      const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
-      const ballWidth = this._convertToPx(this.ballWidth)
-      const ballHeight = this._convertToPx(this.ballHeight)
+      const ballWidth = this._convertToPx(this.ballWidth, false)
+      const ballHeight = this._convertToPx(this.ballHeight, true)
 
       if (this.windowSizeStatus === 'normal' || this.windowSizeStatus === 'splitScreen') {
         newX = Math.min(
           // 窗口左边缘不能小于0
-          Math.max(newX, 0),
+          Math.max(newX, parentElementX),
           // 窗口右边缘不能超出屏幕宽度
-          screenWidth - windowWidth)
+          parentElementX + parentElementWidth - windowWidth)
 
         newY = Math.min(
           // 窗口上边缘不能小于0
-          Math.max(newY, 0),
+          Math.max(newY, parentElementY),
           // 窗口下边缘不能超出屏幕高度
-          screenHeight - windowHeight)
+          parentElementY + parentElementHeight - windowHeight)
       } else if (this.windowSizeStatus === 'minimize') {
         newX = Math.min(
           // 悬浮球左边缘不能小于0
-          Math.max(newX, 0),
+          Math.max(newX, parentElementX),
           // 悬浮球右边缘不能超出屏幕宽度
-          screenWidth - ballWidth)
+          parentElementX + parentElementWidth - ballWidth)
 
         newY = Math.min(
           // 悬浮球上边缘不能小于0
-          Math.max(newY, 0),
+          Math.max(newY, parentElementY),
           // 悬浮球下边缘不能超出屏幕高度
-          screenHeight - ballHeight)
+          parentElementY + parentElementHeight - ballHeight)
       }
       this.updateWindowPosition({ newX, newY })
     },
@@ -800,37 +880,39 @@ export default {
      * @private
      */
     _applyTouchBoundaryCheck (newX, newY) {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const parentElementX = this.parentElementX
+      const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
-      const ballWidth = this._convertToPx(this.ballWidth)
-      const ballHeight = this._convertToPx(this.ballHeight)
+      const ballWidth = this._convertToPx(this.ballWidth, false)
+      const ballHeight = this._convertToPx(this.ballHeight, true)
 
       if (this.windowSizeStatus === 'normal' || this.windowSizeStatus === 'splitScreen') {
         newX = Math.min(
           // 窗口左边缘不能小于0
-          Math.max(newX, 0),
+          Math.max(newX, parentElementX),
           // 窗口右边缘不能超出屏幕宽度
-          screenWidth - windowWidth)
+          parentElementX + parentElementWidth - windowWidth)
 
         newY = Math.min(
           // 窗口上边缘不能小于0
-          Math.max(newY, 0),
+          Math.max(newY, parentElementY),
           // 窗口下边缘不能超出屏幕高度
-          screenHeight - windowHeight)
+          parentElementY + parentElementHeight - windowHeight)
       } else if (this.windowSizeStatus === 'minimize') {
         newX = Math.min(
           // 悬浮球左边缘不能小于0
-          Math.max(newX, 0),
+          Math.max(newX, parentElementX),
           // 悬浮球右边缘不能超出屏幕宽度
-          screenWidth - ballWidth)
+          parentElementX + parentElementWidth - ballWidth)
 
         newY = Math.min(
           // 悬浮球上边缘不能小于0
-          Math.max(newY, 0),
+          Math.max(newY, parentElementY),
           // 悬浮球下边缘不能超出屏幕高度
-          screenHeight - ballHeight)
+          parentElementY + parentElementHeight - ballHeight)
       }
       this.updateWindowPosition({ newX, newY })
     },
@@ -904,8 +986,10 @@ export default {
      * @private
      */
     _handleSplitScreen ({ nowX, nowY }) {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const parentElementX = this.parentElementX
+      const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
       const currentDragDirection = this.currentDragDirection
@@ -920,7 +1004,7 @@ export default {
         let newHeight = windowHeight
         if (this.windowSizeStatus === 'splitScreen') {
           // 宽度撑满情况,如果左右滑动，则复原窗口
-          if (windowWidth === screenWidth) {
+          if (windowWidth === parentElementWidth) {
             if (currentDragDirection === 'left' ||
               currentDragDirection === 'right') {
               this.handleRestore()
@@ -929,7 +1013,7 @@ export default {
             return
           }
           // 高度撑满情况，如果向下滑动，则复原窗口
-          if (windowHeight === screenHeight) {
+          if (windowHeight === parentElementHeight) {
             if (currentDragDirection === 'down') {
               this.handleRestore()
               return
@@ -950,16 +1034,16 @@ export default {
         this.windowSizeStatus = 'splitScreen'
         // 以下是分屏情况判断
         if (currentAzimuth === 'left') {
-          nowX = 0
-          nowY = 0
-          newWidth = screenWidth / 2
-          newHeight = screenHeight
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight
         }
         if (currentAzimuth === 'right') {
-          nowX = screenWidth / 2
-          nowY = 0
-          newWidth = screenWidth / 2
-          newHeight = screenHeight
+          nowX = parentElementX + (parentElementWidth / 2)
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight
         }
 
         // 向上滑动则最大化
@@ -969,37 +1053,37 @@ export default {
         }
 
         if (currentAzimuth === 'bottom') {
-          nowX = 0
-          nowY = screenHeight / 2
-          newWidth = screenWidth
-          newHeight = screenHeight / 2
+          nowX = parentElementX
+          nowY = parentElementY + (parentElementHeight / 2)
+          newWidth = parentElementWidth
+          newHeight = parentElementHeight / 2
         }
 
         if (currentAzimuth === 'top-left') {
-          nowX = 0
-          nowY = 0
-          newWidth = screenWidth / 2
-          newHeight = screenHeight / 2
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
         }
 
         if (currentAzimuth === 'top-right') {
-          nowX = screenWidth / 2
-          nowY = 0
-          newWidth = screenWidth / 2
-          newHeight = screenHeight / 2
+          nowX = parentElementX + (parentElementWidth / 2)
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
         }
         if (currentAzimuth === 'bottom-left') {
-          nowX = 0
-          nowY = screenHeight / 2
-          newWidth = screenWidth / 2
-          newHeight = screenHeight / 2
+          nowX = parentElementX
+          nowY = parentElementY + (parentElementHeight / 2)
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
         }
 
         if (currentAzimuth === 'bottom-right') {
-          nowX = screenWidth / 2
-          nowY = screenHeight / 2
-          newWidth = screenWidth / 2
-          newHeight = screenHeight / 2
+          nowX = parentElementX + (parentElementWidth / 2)
+          nowY = parentElementY + (parentElementHeight / 2)
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
         }
         this.updateWindowSize({ newWidth, newHeight })
         this.updateWindowPosition({ newX: nowX, newY: nowY })
@@ -1013,27 +1097,28 @@ export default {
      * @private
      */
     _handleStickToEdges ({ nowX, nowY }) {
-      const screenWidth = window.innerWidth
+      const parentElementWidth = this.parentElementWidth
       const windowWidth = this.windowState.width
-      const ballWidth = this._convertToPx(this.ballWidth)
+      const parentElementX = this.parentElementX
+      const ballWidth = this._convertToPx(this.ballWidth, false)
       if (this.windowSizeStatus === 'splitScreen') {
         return
       }
       if (this.isActionEnable('stickToEdges')) {
         const edgeTolerance = this._convertToPx(this.edgeTolerance)
         if (nowX <= edgeTolerance) {
-          nowX = 0
+          nowX = parentElementX
           this.updateWindowPosition({ newX: nowX })
           this.$emit('stopDrag', { nowX, nowY })
           return
         }
         if (this.windowSizeStatus === 'normal') {
-          if (nowX >= screenWidth - windowWidth - edgeTolerance) {
-            nowX = screenWidth - windowWidth
+          if (nowX >= parentElementX + parentElementWidth - windowWidth - edgeTolerance) {
+            nowX = parentElementX + parentElementWidth - windowWidth
           }
         } else if (this.windowSizeStatus === 'minimize') {
-          if (nowX >= screenWidth - ballWidth - edgeTolerance) {
-            nowX = screenWidth - ballWidth
+          if (nowX >= parentElementX + parentElementWidth - ballWidth - edgeTolerance) {
+            nowX = parentElementX + parentElementWidth - ballWidth
           }
         }
         this.updateWindowPosition({ newX: nowX })
@@ -1083,6 +1168,16 @@ export default {
       window.addEventListener('touchend', this._stopTouchResize)
       this.resizeDirection = direction
     },
+    // _applyScalingToChildren (element, scaleFactor) {
+    //   element.style.transform = `scale(${scaleFactor})`
+    //   element.style.WebkitTransform = `scale(${scaleFactor})`
+    //   Array.from(element.children).forEach(child => {
+    //     if (child.children.length <= 0) {
+    //       return
+    //     }
+    //     this._applyScalingToChildren(child, scaleFactor)
+    //   })
+    // },
     /**
      * 调整大小
      * @param event
@@ -1096,10 +1191,9 @@ export default {
       const deltaX = event.clientX - this.startPosition.x
       const deltaY = event.clientY - this.startPosition.y
 
-      let newX = this.windowState.x
-      let newY = this.windowState.y
-      let newWidth = this.windowState.width
-      let newHeight = this.windowState.height
+      const { x: oldX, y: oldY, width: oldWidth, height: oldHeight } = this.windowState
+      let { x: newX, y: newY, width: newWidth, height: newHeight } = this.windowState
+
       switch (this.resizeDirection) {
         case 'top':
           newY += deltaY
@@ -1144,9 +1238,16 @@ export default {
       this._applyBoundaryCheck(newX, newY)
 
       this.updateWindowSize({ newWidth, newHeight })
-
+      // 计算缩放比例
+      // const heightScale = oldHeight / newHeight
+      // const widthScale = oldWidth / newWidth
+      // const scaleFactor = Math.min(heightScale, widthScale)
+      // const innerDivs = Array.from(this.$refs.floatWindowRef.children)
+      // innerDivs.forEach(div => {
+      //   this._applyScalingToChildren(div, scaleFactor)
+      // })
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
-      this.$emit('resize', { deltaX, deltaY, newX, newY, newWidth, newHeight })
+      this.$emit('resize', { oldX, oldY, oldHeight, oldWidth, newX, newY, newHeight, newWidth })
     },
     /**
      * 调整大小(移动端)
@@ -1162,10 +1263,8 @@ export default {
       const deltaX = touch.clientX - this.startPosition.x
       const deltaY = touch.clientY - this.startPosition.y
 
-      let newX = this.windowState.x
-      let newY = this.windowState.y
-      let newWidth = this.windowState.width
-      let newHeight = this.windowState.height
+      const { x: oldX, y: oldY, width: oldWidth, height: oldHeight } = this.windowState
+      let { x: newX, y: newY, width: newWidth, height: newHeight } = this.windowState
 
       switch (this.resizeDirection) {
         case 'top':
@@ -1213,31 +1312,22 @@ export default {
       this.updateWindowSize({ newWidth, newHeight })
 
       this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
-
-      /**
-       * 调整悬浮窗大小时调用
-       * @event resize
-       * @property {number} deltaX 偏移量x
-       * @property {number} deltaY 偏移量y
-       * @property {number} newX 现在位置x
-       * @property {number} newY 现在位置y
-       * @property {number} newWidth 宽
-       * @property {number} newHeight 高
-       */
-      this.$emit('resize', { deltaX, deltaY, newX, newY, newWidth, newHeight })
+      this.$emit('resize', { oldX, oldY, oldHeight, oldWidth, newX, newY, newHeight, newWidth })
     },
     /**
      * 处理补齐
      */
     _handlePadded () {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const parentElementX = this.parentElementX
+      const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
 
       // 全屏补齐
-      if (windowWidth > 0.8 * screenWidth &&
-        windowHeight > 0.8 * screenHeight) {
+      if (windowWidth > 0.8 * parentElementWidth &&
+        windowHeight > 0.8 * parentElementHeight) {
         // 判断是否需要最大化
         if (!this.isActionEnable('maximize')) {
           return
@@ -1247,15 +1337,15 @@ export default {
       }
 
       // 上下两侧补齐
-      if (windowHeight > 0.8 * screenHeight) {
-        this.updateWindowPosition({ newY: 0 })
-        this.updateWindowSize({ newHeight: screenHeight })
+      if (windowHeight > 0.8 * parentElementHeight) {
+        this.updateWindowPosition({ newY: parentElementY })
+        this.updateWindowSize({ newHeight: parentElementHeight })
       }
 
       // 左右两侧补齐
-      if (windowWidth > 0.8 * screenWidth) {
-        this.updateWindowPosition({ newX: 0 })
-        this.updateWindowSize({ newWidth: screenWidth })
+      if (windowWidth > 0.8 * parentElementWidth) {
+        this.updateWindowPosition({ newX: parentElementX })
+        this.updateWindowSize({ newWidth: parentElementWidth })
       }
     },
     /**
@@ -1386,10 +1476,12 @@ export default {
      * @public
      */
     handleRestore () {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
-      const defaultWindowWidth = this._convertToPx(this.defaultSize.width)
-      const defaultWindowHeight = this._convertToPx(this.defaultSize.height)
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const parentElementX = this.parentElementX
+      const parentElementY = this.parentElementY
+      const defaultWindowWidth = this._convertToPx(this.defaultSize.width, false)
+      const defaultWindowHeight = this._convertToPx(this.defaultSize.height, true)
       const { width: nowWidth, height: nowHeight } = this.windowState
       // 最小化复原窗口逻辑
       if (this.windowSizeStatus === 'minimize') {
@@ -1410,8 +1502,8 @@ export default {
           newHeight: defaultWindowHeight
         })
         this.updateWindowPosition({
-          newX: (screenWidth - defaultWindowWidth) / 2,
-          newY: (screenHeight - defaultWindowHeight) / 2
+          newX: parentElementX + ((parentElementWidth - defaultWindowWidth) / 2),
+          newY: parentElementY + ((parentElementHeight - defaultWindowHeight) / 2)
         })
         this.$emit('windowStatusChange', this.windowSizeStatus)
         return
@@ -1422,15 +1514,15 @@ export default {
       }
       this.windowSizeStatus = 'normal'
       // 宽度撑满
-      if (nowWidth === screenWidth) {
+      if (nowWidth === parentElementWidth) {
         if (this.currentDragDirection === 'left') {
           this.updateWindowPosition({
-            newX: 0
+            newX: parentElementX
           })
         }
         if (this.currentDragDirection === 'right') {
           this.updateWindowPosition({
-            newX: screenWidth / 2
+            newX: parentElementX + (parentElementWidth / 2)
           })
         }
         this.updateWindowSize({
@@ -1440,15 +1532,27 @@ export default {
         return
       }
       // 高度撑满
-      if (nowHeight === screenHeight) {
+      if (nowHeight === parentElementHeight) {
         this.updateWindowPosition({
-          newY: screenHeight / 2
+          newY: parentElementY + (parentElementHeight / 2)
         })
         this.updateWindowSize({
           newHeight: defaultWindowHeight
         })
         this.$emit('windowStatusChange', this.windowSizeStatus)
       }
+    },
+    /**
+     * 置顶窗口
+     */
+    handleTop () {
+      if (this.isTop) {
+        this.windowState.zIndex = 20
+        this.isTop = false
+        return
+      }
+      this.windowState.zIndex = 999
+      this.isTop = true
     },
     /**
      * 最小化窗口
@@ -1467,27 +1571,35 @@ export default {
       if (!this.isActionEnable('close')) {
         return
       }
-      /**
-       * 关闭悬浮窗时调用
-       * @event closeWindow
-       */
+      this.$emit('beforeClose', this._done)
+      if (!this.$listeners.beforeClose) {
+        this._done()
+      }
+    },
+    /**
+     * 真正关闭窗口的逻辑
+     */
+    _done () {
       this.$emit('closeWindow')
       const el = this.$el
-
+      if (!el) {
+        return
+      }
+      // 组件为动态创建时
       if (document.body.contains(el) &&
         el.parentNode === document.body) {
         document.body.removeChild(el)
-      } else {
-        const floatWindowRef = this.$refs.floatWindowRef
-        if (floatWindowRef) {
-          floatWindowRef.parentNode.removeChild(floatWindowRef)
-        }
+        this.$destroy()
+        return
       }
+      // 组件为静态创建时
+      el.parentNode.removeChild(el)
       this.$destroy()
     }
   },
   beforeDestroy () {
-    document.removeEventListener('click', this.handleOutsideClick)
+    document.removeEventListener('click', this._handleOutsideClick)
+    window.removeEventListener('resize', this._handleOutsideResize)
   }
 }
 </script>

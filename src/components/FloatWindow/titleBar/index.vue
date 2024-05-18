@@ -6,10 +6,7 @@
        background-color: ${titleBarBackgroundColor};`}`">
     <!-- 标题栏左侧区域 -->
     <div class="left" :style="titleBarLeftStyle">
-      <slot name="titleBarLeft">
-        <img
-          src="@/assets/icon/info.png"/>
-      </slot>
+      <slot name="titleBarLeft"/>
     </div>
     <!-- 标题栏中央区域 -->
     <div class="center" :style="titleBarCenterStyle">
@@ -27,6 +24,11 @@
     </div>
     <!-- 标题栏右侧区域 -->
     <div class="right" :style="titleBarRightStyle">
+      <img
+        src="@/assets/icon/top.png"
+        v-if="isActionEnable('top')"
+        :class="isTop?'active':''"
+        @click="handleTop" alt="置顶"/>
       <img
         src="@/assets/icon/minimize.png"
         v-if="isActionEnable('minimize')"
@@ -104,6 +106,9 @@
       }
     }
   }
+  .active{
+    background-color: rgba(0, 0, 0, 0.1);
+  }
 }
 </style>
 <script>
@@ -113,6 +118,7 @@ import actionProps from '@/components/FloatWindow/action/props'
 export default {
   name: 'titleBar',
   mixins: [titleBarProps, actionProps],
+  emits: ['handleTop', 'handleMinimize', 'handleMaximize', 'handleRestore', 'closeWindow'],
   props: {
     /**
      * 窗口大小状态
@@ -121,6 +127,13 @@ export default {
       type: String,
       default: 'normal',
       required: true
+    },
+    /**
+     * 是否置顶
+     */
+    isTop: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
@@ -130,7 +143,7 @@ export default {
   computed: {
     /**
      * 标题样式
-     * @returns {{color: string, fontSize: number}}
+     * @returns {{color: string, fontSize: string}}
      */
     titleStyle () {
       return {
@@ -140,7 +153,7 @@ export default {
     },
     /**
      * 副标题样式
-     * @returns {{color: string, fontSize: number}}
+     * @returns {{color: string, fontSize: string}}
      */
     subtitleStyle () {
       return {
@@ -150,6 +163,12 @@ export default {
     }
   },
   methods: {
+    /**
+     * 置顶窗口
+     */
+    handleTop () {
+      this.$emit('handleTop')
+    },
     /**
      * 最小化窗口
      */
