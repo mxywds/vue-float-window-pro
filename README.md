@@ -31,10 +31,10 @@ vue仿win窗口实现悬浮窗拖动，调整大小，最大化，复原，及�
 
 </p>
 
-![](./docs/assets/all.png)
-![](./docs/assets/title.png)
-![](./docs/assets/web.png)
-![](./docs/assets/slot2.png)
+![](./public/docs/assets/all.png)
+![](./public/docs/assets/title.png)
+![](./public/docs/assets/web.png)
+![](./public/docs/assets/slot2.png)
 
 
 ## 目录
