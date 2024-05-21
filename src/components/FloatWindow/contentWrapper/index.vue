@@ -290,7 +290,7 @@ export default {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0 20px;
+  padding: 0 20px 20px 20px;
   border-radius: 0 0 10px 10px;
   overflow: auto;
   .toolbar{
