@@ -198,19 +198,19 @@ PC端双击可复原窗口。
 
 ![显示网页](../assets/web.png)
 
-## 加载页面(方案1)
+## 加载页面(方案一)
 通过设置`pathType`属性值为`router`，可以在悬浮窗内显示子路由的页面(通过router-view方式加载)。  
 可以通过`params`属性传递参数给子路由，子路由通过`props`的`params`属性获取传递进来的参数。  
 (注意：动态创建的悬浮窗不支持路由模式)
 ```javascript
 
 <FloatWindow
-  title="加载页面(方案1)"
+  title="加载页面(方案一)"
   path-type="router"
 />
 ```
 
-## 加载路由(方案2)
+## 加载路由(方案二)
 通过设置`pathType`属性值为`component`或者`view`，并且配置`path`属性，将会加载对应路径下的组件/页面。  
 即：  
 假如页面位置在 `/src/views/home/index.vue` ,则对应的`pathType`为`view`，`path`为`/home/index`。  
@@ -219,19 +219,19 @@ PC端双击可复原窗口。
 ```javascript
 
 <FloatWindow
-  title="加载页面(方案2)"
+  title="加载页面(方案二)"
   path-type="view"
   path="/home/index"
 />
 ```
 
-## 多标签页实践
+## 多标签页实践(方案一)
 加上`enableTab`属性，即可开启多标签页功能。  
 需要传入`tabs`属性，来定义标签页。  
 `tabs`里的具体属性同上。  
 ```vue
 <FloatWindow
-  title="多标签页实践"
+  title="多标签页实践(方案一)"
   enableTab
   :tabs="[
      {
@@ -256,6 +256,37 @@ PC端双击可复原窗口。
 />
 ```
 
+## 多标签页实践(方案二)
+加上`enableTab`属性，即可开启多标签页功能。  
+需要传入`tabs`属性，来定义标签页。
+与上面方案不同的是，可以通过插槽来传递具体内容。
+通过`currentTab`来获取当前标签页的各种属性。
+```vue
+<FloatWindow
+  title="多标签页实践(方案二)"
+  enableTab
+  :tabs="[
+     {
+       title: 'pageA', 
+       pathType:'none',
+       icon:'',
+       closable:true,
+       draggable:true
+      },
+     {
+       title: 'pageB', 
+       path: '/home/index',
+       pathType:'none',
+       closable:true,
+       draggable:true
+      }]"
+>
+    <template #default="{currentTab}">
+      <div v-show="currentTab.title==='pageA'">页面一</div>
+      <div v-show="currentTab.title==='pageB'">页面二</div>
+    </template>
+</FloatWindow>
+```
 
 ## 边缘吸附
 
