@@ -6,7 +6,7 @@ export default {
      */
     titleBarHeight: {
       type: Number | String,
-      default: '10vh'
+      default: '40px'
     },
     /**
      * 标题栏的背景颜色

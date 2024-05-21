@@ -17,108 +17,134 @@
         <slot name="floatBall"/>
       </template>
     </float-ball>
-    <div
-      ref="windowRef"
-      v-show="windowSizeStatus!=='minimize'"
-      :class="{ window: true, maximized: windowSizeStatus==='maximize' }"
-      :style="internalWindowStyle"
-      @click="_handleClickFloatWindow"
-    >
-      <!-- 标题栏 -->
-        <title-bar
-          :actions="actions"
-          :disabled-actions="disabledActions"
-          :title="title"
-          :title-font-size="titleFontSize"
-          :title-font-color="titleFontColor"
-          :subtitle="subtitle"
-          :subtitle-font-size="subtitleFontSize"
-          :subtitle-font-color="subtitleFontColor"
-          :window-size-status="windowSizeStatus||'normal'"
-          :title-bar-height="_convertToPx(titleBarHeight,true)"
-          :title-bar-background-color="titleBarBackgroundColor"
-          :title-bar-left-style="titleBarLeftStyle"
-          :title-bar-center-style="titleBarCenterStyle"
-          :title-bar-right-style="titleBarRightStyle"
-          :title-bar-background-style="titleBarStyle"
-          :is-top="isTop"
-          @mousedown.native="_startDrag"
-          @handleTop="handleTop"
-          @handleMinimize="handleMinimize"
-          @handleMaximize="handleMaximize"
-          @handleRestore="handleRestore"
-          @closeWindow="closeWindow"
-        >
-          <template #titleBarLeft>
-            <!-- @slot 标题栏左侧区域-->
-            <slot name="titleBarLeft"/>
-          </template>
-          <template #default>
-            <!-- @slot 标题栏中央区域-->
-            <slot name="titleBarCenter"/>
-          </template>
-        </title-bar>
+    <div v-show="windowSizeStatus!=='minimize'">
+      <div
+        ref="windowRef"
+        :class="{ window: true, maximized: windowSizeStatus==='maximize' }"
+        :style="internalWindowStyle"
+        @click="_handleClickFloatWindow"
+      >
+        <slot name="titleBar">
+          <!-- 标题栏 -->
+          <title-bar
+            :actions="actions"
+            :disabled-actions="disabledActions"
+            :title="title"
+            :title-font-size="titleFontSize"
+            :title-font-color="titleFontColor"
+            :subtitle="subtitle"
+            :subtitle-font-size="subtitleFontSize"
+            :subtitle-font-color="subtitleFontColor"
+            :window-size-status="windowSizeStatus||'normal'"
+            :window-state="windowState"
+            :title-bar-height="_convertToPx(titleBarHeight,true)"
+            :title-bar-background-color="titleBarBackgroundColor"
+            :title-bar-left-style="titleBarLeftStyle"
+            :title-bar-center-style="titleBarCenterStyle"
+            :title-bar-right-style="titleBarRightStyle"
+            :title-bar-background-style="titleBarStyle"
+            :is-top="isTop"
+            :current-tab-index="currentTabIndex"
+            :current-tabs="currentTabs"
+            :enable-tab="enableTab"
+            @dblclick.native="_handleDoubleClickTitleBar"
+            @mousedown.native="_startDrag"
+            @handleTop="handleTop"
+            @handleMinimize="handleMinimize"
+            @handleMaximize="handleMaximize"
+            @handleRestore="handleRestore"
+            @closeWindow="closeWindow"
+            @handleZoomIn="handleZoomIn"
+            @handleZoomOut="handleZoomOut"
+            @handleCloseTab="handleCloseTab"
+            @handleTabClick="handleTabClick"
+            @handleAddTab="handleAddTab"
+          >
+            <template #titleBarLeft>
+              <!-- @slot 标题栏左侧区域-->
+              <slot name="titleBarLeft"/>
+            </template>
+            <template #default>
+              <!-- @slot 标题栏中央区域-->
+              <slot name="titleBarCenter"/>
+            </template>
+            <template #titleBarRight>
+              <!-- @slot 标题栏右侧区域-->
+              <slot name="titleBarRight"/>
+            </template>
+          </title-bar>
+        </slot>
         <!-- 窗口主体内容 -->
         <content-wrapper
+          ref="contentWrapperRef"
           :actions="actions"
           :disabled-actions="disabledActions"
-          class="content"
-          :path="path"
           :is-dragging="isDragging"
           :is-resizing="isResizing"
-          :height="internalWindowStyle.contentHeight"
-             :style="`background-color: ${backgroundColor};
-             height: ${internalWindowStyle.contentHeight};`">
+          :is-outside-click="isOutsideClick"
+          :parent-element-height="parentElementHeight"
+          :parent-element-width="parentElementWidth"
+          :window-state="windowState"
+          :current-tabs="currentTabs"
+          :current-tab-index="currentTabIndex"
+          :style="`background-color: ${backgroundColor};
+          height: 0;
+             flex: 1 0 auto;`"
+          @startTouchDrag="_startTouchDrag"
+          @startDrag="_startDrag"
+          @handleRestore="handleRestore"
+        >
           <!-- @slot 窗口内容-->
           <template #toolbar >
-            <slot name="toolbar"/>
+            <slot name="toolbar" :currentTab="currentTabs[currentTabIndex]"/>
           </template>
           <template #leftSidebar >
-            <slot name="leftSidebar"/>
+            <slot name="leftSidebar" :currentTab="currentTabs[currentTabIndex]"/>
           </template>
-          <template #default >
-            <slot/>
+          <template #default>
+            <slot :currentTab="currentTabs[currentTabIndex]"/>
           </template>
           <template #rightSidebar >
-            <slot name="rightSidebar"/>
+            <slot name="rightSidebar" :currentTab="currentTabs[currentTabIndex]"/>
           </template>
           <template #footer >
-            <slot name="footer"/>
+            <slot name="footer" :currentTab="currentTabs[currentTabIndex]"/>
           </template>
         </content-wrapper>
-      <!-- 可调整大小的边框 -->
-      <div class="resizer resizer-top"
-           @touchstart.stop="_startTouchDrag"
-           @mousedown.stop="_startResize('top')"/>
-      <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer resizer-bottom"
-           @touchstart.stop="_startTouchResize('bottom')"
-           @mousedown.stop="_startResize('bottom')"/>
-      <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer resizer-left"
-           @touchstart.stop="_startTouchResize('left')"
-           @mousedown.stop="_startResize('left')"/>
-      <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer resizer-right"
-           @touchstart.stop="_startTouchResize('right')"
-           @mousedown.stop="_startResize('right')"/>
-      <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer corner resizer-top-left"
-           @touchstart.stop="_startTouchResize('top-left')"
-           @mousedown.stop="_startResize('top-left')"/>
-      <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer corner resizer-top-right"
-           @touchstart.stop="_startTouchResize('top-right')"
-           @mousedown.stop="_startResize('top-right')"/>
-      <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer corner resizer-bottom-left"
-           @touchstart.stop="_startTouchResize('bottom-left')"
-           @mousedown.stop="_startResize('bottom-left')"/>
-      <div v-show="windowSizeStatus!=='maximize'"
-           class="resizer corner resizer-bottom-right"
-           @touchstart.stop="_startTouchResize('bottom-right')"
-           @mousedown.stop="_startResize('bottom-right')"/>
-      <div class="split-screen-mask" :style="screenMaskStyle"/>
+        <!-- 可调整大小的边框 -->
+        <div class="resizer resizer-top"
+             @touchstart.stop="_startTouchDrag"
+             @mousedown.stop="_startResize('top')"/>
+        <div v-show="windowSizeStatus!=='maximize'"
+             class="resizer resizer-bottom"
+             @touchstart.stop="_startTouchResize('bottom')"
+             @mousedown.stop="_startResize('bottom')"/>
+        <div v-show="windowSizeStatus!=='maximize'"
+             class="resizer resizer-left"
+             @touchstart.stop="_startTouchResize('left')"
+             @mousedown.stop="_startResize('left')"/>
+        <div v-show="windowSizeStatus!=='maximize'"
+             class="resizer resizer-right"
+             @touchstart.stop="_startTouchResize('right')"
+             @mousedown.stop="_startResize('right')"/>
+        <div v-show="windowSizeStatus!=='maximize'"
+             class="resizer corner resizer-top-left"
+             @touchstart.stop="_startTouchResize('top-left')"
+             @mousedown.stop="_startResize('top-left')"/>
+        <div v-show="windowSizeStatus!=='maximize'"
+             class="resizer corner resizer-top-right"
+             @touchstart.stop="_startTouchResize('top-right')"
+             @mousedown.stop="_startResize('top-right')"/>
+        <div v-show="windowSizeStatus!=='maximize'"
+             class="resizer corner resizer-bottom-left"
+             @touchstart.stop="_startTouchResize('bottom-left')"
+             @mousedown.stop="_startResize('bottom-left')"/>
+        <div v-show="windowSizeStatus!=='maximize'"
+             class="resizer corner resizer-bottom-right"
+             @touchstart.stop="_startTouchResize('bottom-right')"
+             @mousedown.stop="_startResize('bottom-right')"/>
+        <div class="split-screen-mask" :style="screenMaskStyle"/>
+      </div>
     </div>
   </div>
 
@@ -134,6 +160,7 @@ import windowProps from '@/components/FloatWindow/props'
 import TitleBar from '@/components/FloatWindow/titleBar/index.vue'
 import FloatBall from '@/components/FloatWindow/floatBall/index.vue'
 import ContentWrapper from '@/components/FloatWindow/contentWrapper/index.vue'
+import { _convertToPx } from '@/components/FloatWindow/utils'
 
 export default {
   mixins: [titleBarProps, actionProps, ballProps, contentProps, windowProps],
@@ -144,8 +171,9 @@ export default {
   mounted () {
     this.windowId = this._generateUUID()
     this._updateParentElementState()
-    document.addEventListener('click', this._handleOutsideClick)
-    window.addEventListener('resize', this._handleOutsideResize)
+    this._initWindowPosition()
+    this._initWindowTabs()
+    this._initWindowEvent()
   },
   emits: ['outsideClick', 'clickFloatWindow', 'clickFloatBall', 'rightClickFloatBall',
     'startDrag', 'stopDrag', 'startResize',
@@ -185,11 +213,11 @@ export default {
        * 存储窗口的状态信息
        */
       windowState: {
-        x: this._convertToPx(this.defaultPosition.x, false),
-        y: this._convertToPx(this.defaultPosition.y, true),
-        width: this._convertToPx(this.defaultSize.width, false),
-        height: this._convertToPx(this.defaultSize.height, true),
-        zIndex: 20
+        x: _convertToPx(this.defaultPosition.x, false),
+        y: _convertToPx(this.defaultPosition.y, true),
+        width: _convertToPx(this.defaultSize.width, false),
+        height: _convertToPx(this.defaultSize.height, true),
+        zIndex: 200
       },
       /**
        * 父元素高度
@@ -200,11 +228,11 @@ export default {
        */
       parentElementWidth: window.innerWidth,
       /**
-       * 父元素X坐标
+       * 父元素X坐标(绝对位置)
        */
       parentElementX: 0,
       /**
-       * 父元素Y坐标
+       * 父元素Y坐标(绝对位置)
        */
       parentElementY: 0,
       /**
@@ -220,7 +248,19 @@ export default {
       startDragPosition: {
         x: 0,
         y: 0
-      }
+      },
+      /**
+       * 是否点击了窗口外部
+       */
+      isOutsideClick: false,
+      /**
+       * 当前Tab的索引
+       */
+      currentTabIndex: 0,
+      /**
+       * 当前Tab的列表
+       */
+      currentTabs: []
     }
   },
   computed: {
@@ -237,12 +277,14 @@ export default {
         top: this.windowSizeStatus === 'maximize' ? `${this.parentElementY}px` : `${this.windowState.y}px`,
         width: this.windowSizeStatus === 'maximize' ? `${this.parentElementWidth}px` : `${this.windowState.width}px`,
         height: this.windowSizeStatus === 'maximize'
-          ? `${this.parentElementHeight - this._convertToPx(this.titleBarHeight, true)}px`
+          ? `${this.parentElementHeight}px`
           : `${this.windowState.height}px`,
         contentHeight: this.windowSizeStatus === 'maximize'
-          ? `${this.parentElementHeight - this._convertToPx(this.titleBarHeight, true) - 12}px`
-          : `${this.windowState.height - this._convertToPx(this.titleBarHeight, true) - 12}px`,
-        zIndex: this.windowState.zIndex
+          ? `${this.parentElementHeight - _convertToPx(this.titleBarHeight, true) - 12}px`
+          : `${this.windowState.height - _convertToPx(this.titleBarHeight, true) - 12}px`,
+        zIndex: this.windowState.zIndex,
+        display: 'flex',
+        flexDirection: 'column'
       }
     },
     /**
@@ -264,9 +306,6 @@ export default {
      * @returns {{width: string, height: string}}
      */
     screenMaskStyle () {
-      const parentElementWidth = this.parentElementWidth
-      const parentElementHeight = this.parentElementHeight
-
       const currentAzimuth = this.currentAzimuth
       const {
         x: windowX, y: windowY,
@@ -280,24 +319,29 @@ export default {
         top: '0px',
         left: '0px'
       }
-
-      const parentElement = this.$el?.parentElement
+      const element = this.$el
+      if (!element) {
+        return nullStatus
+      }
+      const parentElement = element.parentElement
       if (!parentElement) {
         return nullStatus
       }
-      const rect = parentElement.getBoundingClientRect()
-      let parentElementX = rect.left
-      let parentElementY = rect.top
+      let { left: rectParentElementX, top: rectParentElementY } = parentElement.getBoundingClientRect()
+      let parentElementWidth = this.parentElementWidth
+      let parentElementHeight = this.parentElementHeight
       if (!this.parentLimitation) {
-        parentElementX = 0
-        parentElementY = 0
+        rectParentElementX = 0
+        rectParentElementY = 0
+        parentElementWidth = window.innerWidth
+        parentElementHeight = window.innerHeight
       }
       const maximizeStatus = {
         display: 'block',
         width: `${parentElementWidth}px`,
         height: `${parentElementHeight}px`,
-        top: `${parentElementY}px`,
-        left: `${parentElementX}px`
+        top: `${rectParentElementY}px`,
+        left: `${rectParentElementX}px`
       }
       // 全屏状态下，不提示
       if (this.windowSizeStatus === 'maximize') {
@@ -320,8 +364,8 @@ export default {
             display: 'block',
             width: `${windowWidth}px`,
             height: `${parentElementHeight}px`,
-            top: `${parentElementY}px`,
-            left: `${windowX}px`
+            top: `${rectParentElementY}px`,
+            left: `${windowX - this.parentElementX + rectParentElementX}px`
           }
         }
         // 左右两侧补齐
@@ -332,8 +376,8 @@ export default {
             display: 'block',
             width: `${parentElementWidth}px`,
             height: `${windowHeight}px`,
-            top: `${windowY}px`,
-            left: `${parentElementX}px`
+            top: `${windowY - this.parentElementY + rectParentElementY}px`,
+            left: `${rectParentElementX}px`
           }
         }
 
@@ -399,8 +443,8 @@ export default {
       if (currentAzimuth === 'left') {
         return {
           display: 'block',
-          top: `${parentElementY}px`,
-          left: `${parentElementX}px`,
+          top: `${rectParentElementY}px`,
+          left: `${rectParentElementX}px`,
           height: `${parentElementHeight}px`,
           width: `${parentElementWidth / 2}px`
         }
@@ -409,8 +453,8 @@ export default {
       if (currentAzimuth === 'right') {
         return {
           display: 'block',
-          top: `${parentElementY}px`,
-          left: `${parentElementX + (parentElementWidth / 2)}px`,
+          top: `${rectParentElementY}px`,
+          left: `${rectParentElementX + (parentElementWidth / 2)}px`,
           height: `${parentElementHeight}px`,
           width: `${parentElementWidth / 2}px`
         }
@@ -422,8 +466,8 @@ export default {
       if (currentAzimuth === 'bottom') {
         return {
           display: 'block',
-          top: `${parentElementY + (parentElementHeight / 2)}px`,
-          left: `${parentElementX}px`,
+          top: `${rectParentElementY + (parentElementHeight / 2)}px`,
+          left: `${rectParentElementX}px`,
           height: `${parentElementHeight / 2}px`,
           width: `${parentElementWidth}px`
         }
@@ -432,8 +476,8 @@ export default {
       if (currentAzimuth === 'top-left') {
         return {
           display: 'block',
-          top: `${parentElementY}px`,
-          left: `${parentElementX}px`,
+          top: `${rectParentElementY}px`,
+          left: `${rectParentElementX}px`,
           height: `${parentElementHeight / 2}px`,
           width: `${parentElementWidth / 2}px`
         }
@@ -442,8 +486,8 @@ export default {
       if (currentAzimuth === 'top-right') {
         return {
           display: 'block',
-          top: `${parentElementY}px`,
-          left: `${parentElementX + (parentElementWidth / 2)}px`,
+          top: `${rectParentElementY}px`,
+          left: `${rectParentElementX + (parentElementWidth / 2)}px`,
           height: `${parentElementHeight / 2}px`,
           width: `${parentElementWidth / 2}px`
         }
@@ -452,8 +496,8 @@ export default {
       if (currentAzimuth === 'bottom-left') {
         return {
           display: 'block',
-          top: `${parentElementY + (parentElementHeight / 2)}px`,
-          left: `${parentElementX}px`,
+          top: `${rectParentElementY + (parentElementHeight / 2)}px`,
+          left: `${rectParentElementX}px`,
           height: `${parentElementHeight / 2}px`,
           width: `${parentElementWidth / 2}px`
         }
@@ -461,8 +505,8 @@ export default {
       if (currentAzimuth === 'bottom-right') {
         return {
           display: 'block',
-          top: `${parentElementY + (parentElementHeight / 2)}px`,
-          left: `${parentElementX + (parentElementWidth / 2)}px`,
+          top: `${rectParentElementY + (parentElementHeight / 2)}px`,
+          left: `${rectParentElementX + (parentElementWidth / 2)}px`,
           height: `${parentElementHeight / 2}px`,
           width: `${parentElementWidth / 2}px`
         }
@@ -482,8 +526,8 @@ export default {
       let { x, y, width, height } = this.windowState
 
       if (this.windowSizeStatus === 'minimize') {
-        x = this._convertToPx(this.ballWidth, false)
-        y = this._convertToPx(this.ballHeight, true)
+        x = _convertToPx(this.ballWidth, false)
+        y = _convertToPx(this.ballHeight, true)
       }
       let horizontal = null
       let vertical = null
@@ -547,49 +591,8 @@ export default {
     }
   },
   methods: {
+    _convertToPx,
     ...mapMutations('floatWindow', ['updateMaxZIndex']),
-    /**
-     * 将尺寸值转换为像素值
-     * @param sizeValue
-     * @param isHeight
-     * @returns {*|number}
-     * @private
-     */
-    _convertToPx (sizeValue, isHeight = false) {
-      const screenWidth = window.innerWidth
-      const screenHeight = window.innerHeight
-      if (typeof sizeValue === 'number') {
-        // 如果宽度已经是数字，则假定为像素值，无需转换
-        return sizeValue
-      } else if (typeof sizeValue === 'string') {
-        // 正则表达式匹配字符串中的数字部分
-        const match = sizeValue.match(/(\d+(\.\d+)?)\s*(px|vw|vh|%)/)
-        if (match) {
-          const value = parseFloat(match[1]) // 提取匹配的数字部分并转换为浮点数
-          const unit = match[3] // 提取匹配的单位
-          switch (unit) {
-            case 'px':
-              return value // 如果单位已经是像素，则无需转换
-            case 'vw':
-              // 根据视口宽度进行转换
-              return (value * screenWidth / 100)
-            case 'vh':
-              // 根据视口高度进行转换
-              return (value * screenHeight / 100)
-            case '%': {
-              if (isHeight) {
-                const parentElementHeight = this.parentElementHeight
-                return (value * parentElementHeight / 100)
-              }
-              const parentElementWidth = this.parentElementWidth
-              return (value * parentElementWidth / 100)
-            }
-          }
-        }
-      }
-      // 如果无法匹配或不是支持的单位，则返回原始值
-      return sizeValue
-    },
     /**
      * 更新父元素状态
      * @private
@@ -597,6 +600,10 @@ export default {
     _updateParentElementState () {
       this.$nextTick(() => {
         if (!this.parentLimitation) {
+          this.parentElementX = 0
+          this.parentElementY = 0
+          this.parentElementWidth = window.innerWidth
+          this.parentElementHeight = window.innerHeight
           return
         }
         const parentElement = this.$el?.parentElement
@@ -609,11 +616,54 @@ export default {
         const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
         this.parentElementX = elementRect.left + scrollLeft
         this.parentElementY = elementRect.top + scrollTop
-        this.windowState.x = this.parentElementX + this._convertToPx(this.defaultPosition.x, false)
-        this.windowState.y = this.parentElementY + this._convertToPx(this.defaultPosition.y, true)
         this.parentElementWidth = elementRect.width
         this.parentElementHeight = elementRect.height
       })
+    },
+    /**
+     * 初始化窗口位置
+     * @private
+     */
+    _initWindowPosition () {
+      this.$nextTick(() => {
+        this.windowState.x = this.parentElementX + _convertToPx(this.defaultPosition.x, false)
+        this.windowState.y = this.parentElementY + _convertToPx(this.defaultPosition.y, true)
+      })
+    },
+    /**
+     * 初始化窗口标签页
+     * @private
+     */
+    _initWindowTabs () {
+      const currentTabs = this.tabs
+      if (currentTabs.length === 0) {
+        currentTabs.push({
+          title: this.title,
+          path: this.path,
+          pathType: this.pathType,
+          closable: true,
+          draggable: true,
+          params: this.params
+        })
+      }
+      currentTabs.forEach((tab) => {
+        tab.key = this._generateUUID()
+        if (tab.pathType === 'web' && !tab.icon) {
+          tab.icon = tab.path.endsWith('/')
+            ? tab.path + 'favicon.ico'
+            : tab.path + '/favicon.ico'
+        }
+      })
+      this.currentTabs = currentTabs
+    },
+    /**
+     * 初始化窗口事件
+     * @private
+     */
+    _initWindowEvent () {
+      document.addEventListener('click', this._handleOutsideClick)
+      // document.addEventListener('scroll', this._handleOutsideScroll)
+      window.addEventListener('resize', this._handleOutsideResize)
     },
     /**
      * 创建窗口
@@ -645,10 +695,10 @@ export default {
     _windowSizeCheck ({ width, height }) {
       let { width: minWidth, height: minHeight } = this.minSize
       let { width: maxWidth, height: maxHeight } = this.maxSize
-      minWidth = this._convertToPx(minWidth, false)
-      maxWidth = this._convertToPx(maxWidth, false)
-      minHeight = this._convertToPx(minHeight, true)
-      maxHeight = this._convertToPx(maxHeight, true)
+      minWidth = _convertToPx(minWidth, false)
+      maxWidth = _convertToPx(maxWidth, false)
+      minHeight = _convertToPx(minHeight, true)
+      maxHeight = _convertToPx(maxHeight, true)
 
       // 确保不超出最小值和最大值
       width = Math.max(minWidth, width)
@@ -665,38 +715,41 @@ export default {
       this._updateParentElementState()
     },
     /**
+     * 处理外部滚动事件
+     */
+    _handleOutsideScroll () {
+      console.log('触发了外部滚动事件')
+      // this._updateParentElementState()
+    },
+    /**
      * 处理外部点击事件
      * @param event
      */
     _handleOutsideClick (event) {
-      if (this.windowSizeStatus !== 'normal' ||
-        this.windowSizeStatus !== 'splitScreen' ||
-      this.windowSizeStatus !== 'minimize') {
+      if (!this.$el.contains(event.target)) {
+        this.isOutsideClick = true
+        this.$emit('outsideClick')
         return
       }
-      if (!this.$refs.modal.contains(event.target)) {
-        /**
-         * 点击悬浮窗外部时调用
-         * @event startResize
-         */
-        this.$emit('outsideClick')
-      }
+      this.isOutsideClick = false
     },
     /**
      * 窗口点击处理
      * @private
      */
     _handleClickFloatWindow () {
-      /**
-       * 点击悬浮窗时调用
-       * @event clickFloatWindow
-       */
       this.$emit('clickFloatWindow')
       if (this.isTop) {
         return
       }
-      // 更新ZIndex
-      const newMaxZIndex = this.maxZIndex + 1
+      this._updateZIndex()
+    },
+    /**
+     * 更新ZIndex
+     * @private
+     */
+    _updateZIndex () {
+      const newMaxZIndex = this.maxZIndex + 10
       this.windowState.zIndex = newMaxZIndex
       this.updateMaxZIndex(newMaxZIndex)
     },
@@ -733,6 +786,7 @@ export default {
       }
       this._disableTextSelection()
       event.preventDefault()
+      this._updateZIndex()
       this.isDragging = true
 
       this._updateStartDragPosition({ newX: event.clientX, newY: event.clientY })
@@ -753,6 +807,7 @@ export default {
       }
       this._disableTextSelection()
       event.preventDefault()
+      this._updateZIndex()
       const touch = event.touches[0]
       this.isDragging = true
 
@@ -843,32 +898,23 @@ export default {
       const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
-      const ballWidth = this._convertToPx(this.ballWidth, false)
-      const ballHeight = this._convertToPx(this.ballHeight, true)
-
+      const ballWidth = _convertToPx(this.ballWidth, false)
+      const ballHeight = _convertToPx(this.ballHeight, true)
       if (this.windowSizeStatus === 'normal' || this.windowSizeStatus === 'splitScreen') {
         newX = Math.min(
-          // 窗口左边缘不能小于0
           Math.max(newX, parentElementX),
-          // 窗口右边缘不能超出屏幕宽度
           parentElementX + parentElementWidth - windowWidth)
 
         newY = Math.min(
-          // 窗口上边缘不能小于0
           Math.max(newY, parentElementY),
-          // 窗口下边缘不能超出屏幕高度
           parentElementY + parentElementHeight - windowHeight)
       } else if (this.windowSizeStatus === 'minimize') {
         newX = Math.min(
-          // 悬浮球左边缘不能小于0
           Math.max(newX, parentElementX),
-          // 悬浮球右边缘不能超出屏幕宽度
           parentElementX + parentElementWidth - ballWidth)
 
         newY = Math.min(
-          // 悬浮球上边缘不能小于0
           Math.max(newY, parentElementY),
-          // 悬浮球下边缘不能超出屏幕高度
           parentElementY + parentElementHeight - ballHeight)
       }
       this.updateWindowPosition({ newX, newY })
@@ -886,32 +932,24 @@ export default {
       const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
-      const ballWidth = this._convertToPx(this.ballWidth, false)
-      const ballHeight = this._convertToPx(this.ballHeight, true)
+      const ballWidth = _convertToPx(this.ballWidth, false)
+      const ballHeight = _convertToPx(this.ballHeight, true)
 
       if (this.windowSizeStatus === 'normal' || this.windowSizeStatus === 'splitScreen') {
         newX = Math.min(
-          // 窗口左边缘不能小于0
           Math.max(newX, parentElementX),
-          // 窗口右边缘不能超出屏幕宽度
           parentElementX + parentElementWidth - windowWidth)
 
         newY = Math.min(
-          // 窗口上边缘不能小于0
           Math.max(newY, parentElementY),
-          // 窗口下边缘不能超出屏幕高度
           parentElementY + parentElementHeight - windowHeight)
       } else if (this.windowSizeStatus === 'minimize') {
         newX = Math.min(
-          // 悬浮球左边缘不能小于0
           Math.max(newX, parentElementX),
-          // 悬浮球右边缘不能超出屏幕宽度
           parentElementX + parentElementWidth - ballWidth)
 
         newY = Math.min(
-          // 悬浮球上边缘不能小于0
           Math.max(newY, parentElementY),
-          // 悬浮球下边缘不能超出屏幕高度
           parentElementY + parentElementHeight - ballHeight)
       }
       this.updateWindowPosition({ newX, newY })
@@ -1100,12 +1138,12 @@ export default {
       const parentElementWidth = this.parentElementWidth
       const windowWidth = this.windowState.width
       const parentElementX = this.parentElementX
-      const ballWidth = this._convertToPx(this.ballWidth, false)
+      const ballWidth = _convertToPx(this.ballWidth, false)
       if (this.windowSizeStatus === 'splitScreen') {
         return
       }
       if (this.isActionEnable('stickToEdges')) {
-        const edgeTolerance = this._convertToPx(this.edgeTolerance)
+        const edgeTolerance = _convertToPx(this.edgeTolerance)
         if (nowX <= edgeTolerance) {
           nowX = parentElementX
           this.updateWindowPosition({ newX: nowX })
@@ -1168,16 +1206,6 @@ export default {
       window.addEventListener('touchend', this._stopTouchResize)
       this.resizeDirection = direction
     },
-    // _applyScalingToChildren (element, scaleFactor) {
-    //   element.style.transform = `scale(${scaleFactor})`
-    //   element.style.WebkitTransform = `scale(${scaleFactor})`
-    //   Array.from(element.children).forEach(child => {
-    //     if (child.children.length <= 0) {
-    //       return
-    //     }
-    //     this._applyScalingToChildren(child, scaleFactor)
-    //   })
-    // },
     /**
      * 调整大小
      * @param event
@@ -1238,14 +1266,6 @@ export default {
       this._applyBoundaryCheck(newX, newY)
 
       this.updateWindowSize({ newWidth, newHeight })
-      // 计算缩放比例
-      // const heightScale = oldHeight / newHeight
-      // const widthScale = oldWidth / newWidth
-      // const scaleFactor = Math.min(heightScale, widthScale)
-      // const innerDivs = Array.from(this.$refs.floatWindowRef.children)
-      // innerDivs.forEach(div => {
-      //   this._applyScalingToChildren(div, scaleFactor)
-      // })
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
       this.$emit('resize', { oldX, oldY, oldHeight, oldWidth, newX, newY, newHeight, newWidth })
     },
@@ -1394,6 +1414,19 @@ export default {
       document.body.style.msUserSelect = ''
       document.body.style.mozUserSelect = ''
     },
+    /**
+     * 双击标题栏
+     * @private
+     */
+    _handleDoubleClickTitleBar () {
+      if (this.windowSizeStatus === 'normal') {
+        this.handleMaximize()
+        return
+      }
+      if (this.windowSizeStatus === 'maximize' || this.windowSizeStatus === 'splitScreen') {
+        this.handleRestore()
+      }
+    },
 
     /**
      * 获取窗口id
@@ -1480,17 +1513,17 @@ export default {
       const parentElementHeight = this.parentElementHeight
       const parentElementX = this.parentElementX
       const parentElementY = this.parentElementY
-      const defaultWindowWidth = this._convertToPx(this.defaultSize.width, false)
-      const defaultWindowHeight = this._convertToPx(this.defaultSize.height, true)
-      const { width: nowWidth, height: nowHeight } = this.windowState
+      const defaultWindowWidth = _convertToPx(this.defaultSize.width, false)
+      const defaultWindowHeight = _convertToPx(this.defaultSize.height, true)
+      const { width: nowWidth, height: nowHeight, x: nowX, y: nowY } = this.windowState
       // 最小化复原窗口逻辑
       if (this.windowSizeStatus === 'minimize') {
         this.windowSizeStatus = 'normal'
-        this.updateWindowSize({
-          newWidth: defaultWindowWidth,
-          newHeight: defaultWindowHeight
-        })
-        this._applyBoundaryCheck(this.windowState.x, this.windowState.y)
+        // this.updateWindowSize({
+        //   newWidth: nowWidth,
+        //   newHeight: nowHeight
+        // })
+        this._applyBoundaryCheck(nowX - (nowWidth / 2), nowY - (nowHeight / 2))
         this.$emit('windowStatusChange', this.windowSizeStatus)
         return
       }
@@ -1508,6 +1541,16 @@ export default {
         this.$emit('windowStatusChange', this.windowSizeStatus)
         return
       }
+      // 小窗口复原
+      if (this.windowSizeStatus === 'normal') {
+        this.updateWindowSize({
+          newWidth: defaultWindowWidth,
+          newHeight: defaultWindowHeight
+        })
+        this.$emit('windowStatusChange', this.windowSizeStatus)
+        return
+      }
+
       // 分屏复原窗口逻辑
       if (this.windowSizeStatus !== 'splitScreen') {
         return
@@ -1525,6 +1568,11 @@ export default {
             newX: parentElementX + (parentElementWidth / 2)
           })
         }
+        if (this.currentDragDirection === 'stop') {
+          this.updateWindowPosition({
+            newX: (parentElementX + defaultWindowWidth / 2)
+          })
+        }
         this.updateWindowSize({
           newWidth: defaultWindowWidth
         })
@@ -1534,7 +1582,7 @@ export default {
       // 高度撑满
       if (nowHeight === parentElementHeight) {
         this.updateWindowPosition({
-          newY: parentElementY + (parentElementHeight / 2)
+          newY: (parentElementY + defaultWindowHeight / 2)
         })
         this.updateWindowSize({
           newHeight: defaultWindowHeight
@@ -1555,11 +1603,53 @@ export default {
       this.isTop = true
     },
     /**
+     * 放大窗口内容
+     */
+    handleZoomIn () {
+      this.$refs.contentWrapperRef._handleZoomIn()
+    },
+    /**
+     * 缩小窗口内容
+     */
+    handleZoomOut () {
+      this.$refs.contentWrapperRef._handleZoomOut()
+    },
+    /**
+     * 关闭tab页
+     * @param index
+     */
+    handleCloseTab (index) {
+      if (this.currentTabs.length === 1) {
+        this.closeWindow()
+        return
+      }
+      if (this.currentTabIndex === index) {
+        this.currentTabIndex = this.currentTabIndex - 1
+      }
+      this.currentTabs.splice(index, 1)
+    },
+    /**
+     * 切换tab页
+     * @param index
+     */
+    handleTabClick (index) {
+      this.currentTabIndex = index
+    },
+    /**
+     * 添加tab页
+     */
+    handleAddTab () {
+      this.currentTabs.push({ key: this._generateUUID(), ...this.newTab })
+      this.currentTabIndex = this.currentTabs.length - 1
+    },
+    /**
      * 最小化窗口
      * @public
      */
     handleMinimize () {
       this.$emit('dblclickFloatBall')
+      const { width, height, x, y } = this.windowState
+      this.updateWindowPosition({ newX: x + (width / 2), newY: y + (height / 2) })
       this.windowSizeStatus = 'minimize'
       this.$emit('windowStatusChange', this.windowSizeStatus)
     },
@@ -1701,9 +1791,12 @@ export default {
     }
   }
   .split-screen-mask{
+    z-index: -1;
     position: fixed;
     display: none;
-    background-color: rgba(0, 0, 0, 0.1);
+    filter: blur(5px);
+    -webkit-filter: blur(5px);
+    background: hsla(0, 0, 0, 0.2);
     width:  calc(100% + 80px);
     height: calc(100% + 80px);
     pointer-events:none;

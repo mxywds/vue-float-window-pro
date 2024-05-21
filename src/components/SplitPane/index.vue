@@ -50,7 +50,7 @@ export default {
     },
     minPercent: {
       type: Number,
-      default: 10
+      default: 0
     },
     defaultPercent: {
       type: Number,

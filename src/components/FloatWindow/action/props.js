@@ -13,7 +13,7 @@ export default {
      */
     actions: {
       type: Array,
-      default: () => ['top', 'drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'restore',
+      default: () => ['top', 'zoomIn', 'zoomOut', 'drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'restore',
         'hide', 'show', 'close', 'splitScreen']
     },
     /**
@@ -24,11 +24,25 @@ export default {
       default: () => []
     },
     /**
-     * 窗口内容路由参数（不为空则加载路由）
+     * 窗口内容路由参数
      */
     path: {
       type: String,
       default: null
+    },
+    /**
+     * 路径类型
+     */
+    pathType: {
+      type: String,
+      default: 'none'
+    },
+    /**
+     * 传递给页面的参数
+     */
+    params: {
+      type: Object,
+      default: () => {}
     },
     /**
      * 是否限制在父div里拖动
@@ -41,6 +55,37 @@ export default {
      * 窗口是否固定
      */
     affix: {
+      type: Boolean,
+      default: false
+    },
+    /**
+     * tab页
+     */
+    tabs: {
+      type: Array,
+      default: () => []
+    },
+    /**
+     * 新标签页
+     */
+    newTab: {
+      type: Object,
+      default: () => {
+        return {
+          title: '新标签页',
+          icon: '',
+          path: '/',
+          params: {},
+          pathType: 'none',
+          closable: true,
+          draggable: true
+        }
+      }
+    },
+    /**
+     * 是否开启tab页
+     */
+    enableTab: {
       type: Boolean,
       default: false
     }

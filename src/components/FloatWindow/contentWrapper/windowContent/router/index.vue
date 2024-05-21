@@ -1,19 +1,25 @@
 <template>
-  <div id="app">
-    <router-view/>
-  </div>
+  <router-view/>
 </template>
 
 <style lang="scss" scoped>
-#app{
-  width: 100%;
-}
-
 </style>
 <script>
 
 export default {
+  name: 'RouterView',
   components: { },
+  props: {
+    pageKey: {
+      type: String
+    },
+    pagePath: {
+      type: String
+    },
+    params: {
+      type: Object
+    }
+  },
   data () {
     return {}
   },

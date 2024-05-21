@@ -1,18 +1,15 @@
 <template>
-  <div id="app">
-    <router-view/>
+  <div>
+    加载中...
   </div>
 </template>
 
 <style lang="scss" scoped>
-#app{
-  width: 100%;
-}
-
 </style>
 <script>
 
 export default {
+  name: 'LoadView',
   components: { },
   data () {
     return {}
