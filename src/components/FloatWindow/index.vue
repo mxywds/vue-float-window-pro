@@ -81,7 +81,6 @@
           :disabled-actions="disabledActions"
           :is-dragging="isDragging"
           :is-resizing="isResizing"
-          :is-outside-click="isOutsideClick"
           :parent-element-height="parentElementHeight"
           :parent-element-width="parentElementWidth"
           :window-state="windowState"

@@ -79,10 +79,6 @@
          v-show="isResizing"/>
     <div class="dragging-mask"
          v-show="isDragging"/>
-    <div class="outside-click-mask"
-         @mousedown.stop="updateOutsideClickMaskShow"
-         @touchstart.stop="updateOutsideClickMaskShow"
-         v-show="isOutsideClick"/>
     <div class="small-window-mask"
          @touchstart.stop="_startTouchDrag"
          @mousedown.stop="_startDrag"
@@ -102,7 +98,7 @@ import { _convertToPx } from '@/components/FloatWindow/utils'
 export default {
   name: 'contentWrapper',
   mixins: [actionProps],
-  emits: ['startTouchDrag', 'startDrag', 'handleRestore', 'updateOutsideClickMaskShow'],
+  emits: ['startTouchDrag', 'startDrag', 'handleRestore'],
   props: {
     /**
      * 窗口是否正在缩放
@@ -114,12 +110,6 @@ export default {
      * 窗口是否正在拖拽
      */
     isDragging: {
-      type: Boolean
-    },
-    /**
-     * 是否点击了窗口外部
-     */
-    isOutsideClick: {
       type: Boolean
     },
     /**
@@ -281,9 +271,6 @@ export default {
         // el.style.setProperty('transform', `scale(${widthScale}, ${heightScale}`, 'important')
         el.style.setProperty('font-size', `${newFontSize}px`, 'important')
       }
-    },
-    updateOutsideClickMaskShow () {
-      this.$emit('updateOutsideClickMaskShow', false)
     }
   }
 }
