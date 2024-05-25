@@ -191,8 +191,9 @@
 
   }
   .center{
-    flex: 1;
-    width: 100%;
+    position: absolute;
+    left: 20%;
+    width: 60%;
     display: flex;
     justify-content: center;
     align-items: center;

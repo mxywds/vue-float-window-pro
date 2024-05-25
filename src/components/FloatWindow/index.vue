@@ -93,6 +93,7 @@
           @startTouchDrag="_startTouchDrag"
           @startDrag="_startDrag"
           @handleRestore="handleRestore"
+          @updateOutsideClickMaskShow="args => isOutsideClick = args"
         >
           <!-- @slot 窗口内容-->
           <template #toolbar >
@@ -738,6 +739,7 @@ export default {
      * @private
      */
     _handleClickFloatWindow () {
+      this.isOutsideClick = false
       this.$emit('clickFloatWindow')
       if (this.isTop) {
         return
@@ -784,7 +786,6 @@ export default {
       if (!this.isActionEnable('drag')) {
         return
       }
-      this._disableTextSelection()
       event.preventDefault()
       this._updateZIndex()
       this.isDragging = true
@@ -805,7 +806,6 @@ export default {
       if (!this.isActionEnable('drag')) {
         return
       }
-      this._disableTextSelection()
       event.preventDefault()
       this._updateZIndex()
       const touch = event.touches[0]
@@ -960,7 +960,6 @@ export default {
      * @private
      */
     _stopDrag () {
-      this._enableTextSelection()
       this.isDragging = false
       document.removeEventListener('mousemove', this._drag)
       document.removeEventListener('mouseup', this._stopDrag)
@@ -988,7 +987,6 @@ export default {
      * @private
      */
     _stopTouchDrag () {
-      this._enableTextSelection()
       this.isDragging = false
       window.removeEventListener('touchmove', this._touchDrag)
       window.removeEventListener('touchend', this._stopTouchDrag)
@@ -1177,7 +1175,6 @@ export default {
       if (!this.isActionEnable('resize')) {
         return
       }
-      this._disableTextSelection()
       this.isResizing = true
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
       document.addEventListener('mousemove', this._resize)
@@ -1198,7 +1195,6 @@ export default {
       if (!this.isActionEnable('resize')) {
         return
       }
-      this._disableTextSelection()
       this.isResizing = true
       const touch = event.touches[0]
       this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
@@ -1373,7 +1369,6 @@ export default {
      * @private
      */
     _stopResize () {
-      this._enableTextSelection()
       this.$emit('stopResize', { ...this.windowState })
       this.isResizing = false
       document.removeEventListener('mousemove', this._resize)
@@ -1385,7 +1380,6 @@ export default {
      * @private
      */
     _stopTouchResize () {
-      this._enableTextSelection()
       this.$emit('stopResize', { ...this.windowState })
       this.isResizing = false
 
@@ -1393,26 +1387,6 @@ export default {
       window.removeEventListener('touchend', this._stopTouchResize)
 
       this._handlePadded()
-    },
-    /**
-     * 禁用文本选择
-     * @private
-     */
-    _disableTextSelection () {
-      document.body.style.userSelect = 'none'
-      document.body.style.webkitUserSelect = 'none'
-      document.body.style.msUserSelect = 'none'
-      document.body.style.mozUserSelect = 'none'
-    },
-    /**
-     * 启用文本选择
-     * @private
-     */
-    _enableTextSelection () {
-      document.body.style.userSelect = ''
-      document.body.style.webkitUserSelect = ''
-      document.body.style.msUserSelect = ''
-      document.body.style.mozUserSelect = ''
     },
     /**
      * 双击标题栏
@@ -1435,6 +1409,20 @@ export default {
      */
     getFloatWindowId () {
       return this.windowId
+    },
+    /**
+     * 获取窗口状态
+     * @returns {{x: *|number, width: *|number, y: *|number, height: *|number, zIndex: number}}
+     */
+    getFloatWindowState () {
+      return this.windowState
+    },
+    /**
+     * 获取窗口大小状态
+     * @returns {default.defaultWindowSizeStatus}
+     */
+    getFloatWindowSizeStatus () {
+      return this.windowSizeStatus
     },
     /**
      * 展示窗口

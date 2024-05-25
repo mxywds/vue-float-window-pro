@@ -1,8 +1,6 @@
 <template>
   <div :style="{ cursor, userSelect}"
        class="vue-splitter-container clearfix"
-       @touchmove="onTouchMove"
-       @touchend="onMouseUp"
        @mouseup="onMouseUp"
        @mousemove="onMouseMove">
 
@@ -19,7 +17,6 @@
       :style="{ [resizeType]: percent+'%'}"
       :split="split"
       @mousedown.native="onMouseDown"
-      @touchstart.prevent="onMouseDown"
       @click.native="onClick"/>
 
     <pane class="splitter-pane splitter-paneR"
@@ -181,7 +178,10 @@ export default {
   clear: both;
   height: 0;
 }
-
+.splitter-pane{
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .vue-splitter-container {
   height: 100%;
   position: relative;

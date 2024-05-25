@@ -80,6 +80,8 @@
     <div class="dragging-mask"
          v-show="isDragging"/>
     <div class="outside-click-mask"
+         @mousedown.stop="updateOutsideClickMaskShow"
+         @touchstart.stop="updateOutsideClickMaskShow"
          v-show="isOutsideClick"/>
     <div class="small-window-mask"
          @touchstart.stop="_startTouchDrag"
@@ -100,7 +102,7 @@ import { _convertToPx } from '@/components/FloatWindow/utils'
 export default {
   name: 'contentWrapper',
   mixins: [actionProps],
-  emits: ['startTouchDrag', 'startDrag', 'handleRestore'],
+  emits: ['startTouchDrag', 'startDrag', 'handleRestore', 'updateOutsideClickMaskShow'],
   props: {
     /**
      * 窗口是否正在缩放
@@ -178,7 +180,6 @@ export default {
   },
   data () {
     return {
-
     }
   },
   watch: {
@@ -280,11 +281,45 @@ export default {
         // el.style.setProperty('transform', `scale(${widthScale}, ${heightScale}`, 'important')
         el.style.setProperty('font-size', `${newFontSize}px`, 'important')
       }
+    },
+    updateOutsideClickMaskShow () {
+      this.$emit('updateOutsideClickMaskShow', false)
     }
   }
 }
 </script>
 <style lang="scss" scoped>
+@mixin scrollbar{
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 100%;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.5);
+    background-clip: padding-box;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    min-height: 28px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.5);
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+  }
+}
+.content-wrapper, .toolbar,.left-sidebar, .content, .right-sidebar, .footer {
+  height: 100%;
+  position: relative;
+  overflow: auto;
+  @include scrollbar;
+}
 
 .content-wrapper{
   position: relative;
@@ -292,37 +327,30 @@ export default {
   flex-direction: column;
   padding: 0 20px 20px 20px;
   border-radius: 0 0 10px 10px;
-  overflow: auto;
   .toolbar{
-    height: 100%;
     background-color: white;
-    overflow: auto;
     display: flex;
     align-items: center;
   }
+  .center-wrapper{
     .left-sidebar{
-      height: 100%;
       background-color: white;
-      overflow: auto;
     }
     .content {
-      height: 100%;
-      overflow: auto;
       background-color: white;
       .tab-page{
         height: 100%;
       }
+
     }
     .right-sidebar{
       background-color: white;
-      height: 100%;
-      overflow: auto;
     }
+  }
+
   .footer{
     background-color: white;
-    overflow: auto;
     display: flex;
-    height: 100%;
     align-items: center;
   }
   .resizing-mask,.dragging-mask,.outside-click-mask,.small-window-mask{
