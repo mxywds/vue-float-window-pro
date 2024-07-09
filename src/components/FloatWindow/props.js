@@ -56,6 +56,13 @@ export default {
     maxSize: {
       type: Object,
       default: () => ({ width: '110vw', height: '110vh' })
+    },
+    /**
+     * 窗口图标
+     */
+    defaultIconSrc: {
+      type: String,
+      default: ''
     }
   }
 }

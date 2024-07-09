@@ -6,14 +6,14 @@ export default {
      */
     titleBarHeight: {
       type: Number | String,
-      default: '40px'
+      default: 7
     },
     /**
      * 标题栏的背景颜色
      */
     titleBarBackgroundColor: {
       type: String,
-      default: '#f3f3f3'
+      default: '#fff'
     },
     /**
      * 标题栏的样式
@@ -32,7 +32,7 @@ export default {
      */
     titleFontSize: {
       type: Number,
-      default: 1
+      default: 1.2
     },
     /**
      * 标题字体颜色

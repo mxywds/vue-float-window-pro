@@ -6,14 +6,14 @@ export default {
      */
     edgeTolerance: {
       type: Number | String,
-      default: 100
+      default: '8.9vw'
     },
     /**
      * 开放的功能
      */
     actions: {
       type: Array,
-      default: () => ['top', 'zoomIn', 'zoomOut', 'drag', 'resize', 'stickToEdges', 'minimize', 'maximize', 'restore',
+      default: () => ['top', 'zoomIn', 'zoomOut', 'drag', 'resize', 'stickToEdges', 'ball', 'minimize', 'maximize', 'restore',
         'hide', 'show', 'close', 'splitScreen']
     },
     /**

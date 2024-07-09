@@ -1,11 +1,12 @@
 <template>
-  <div ref="floatWindowRef" v-show="windowSizeStatus!=='hide'">
+  <div v-show="windowSizeStatus!=='hide'">
     <float-ball
-      v-show="windowSizeStatus==='minimize'"
+      v-show="windowSizeStatus==='ball'"
       :internal-ball-style="internalBallStyle"
       :style="ballStyle"
-      :ball-height="_convertToPx(ballHeight,true)"
-      :ball-width="_convertToPx(ballWidth,false)"
+      :default-icon-src="defaultIconSrc"
+      :ball-height="_convertToVh(ballHeight,true)"
+      :ball-width="_convertToVw(ballWidth,false)"
       @mousedown.native="_startDrag"
       @touchstart.native="_startTouchDrag"
       @click.native="_handleClickFloatBall"
@@ -14,10 +15,10 @@
     >
       <template #default>
         <!-- @slot 悬浮球内容-->
-        <slot name="floatBall"/>
+        <slot name="floatBall" :window-id="windowId" />
       </template>
     </float-ball>
-    <div v-show="windowSizeStatus!=='minimize'">
+    <div v-show="windowSizeStatus!=='ball'">
       <div
         ref="windowRef"
         :class="{ window: true, maximized: windowSizeStatus==='maximize' }"
@@ -37,7 +38,7 @@
             :subtitle-font-color="subtitleFontColor"
             :window-size-status="windowSizeStatus||'normal'"
             :window-state="windowState"
-            :title-bar-height="_convertToPx(titleBarHeight,true)"
+            :title-bar-height="_convertToVw(titleBarHeight,true)"
             :title-bar-background-color="titleBarBackgroundColor"
             :title-bar-left-style="titleBarLeftStyle"
             :title-bar-center-style="titleBarCenterStyle"
@@ -50,8 +51,9 @@
             @dblclick.native="_handleDoubleClickTitleBar"
             @mousedown.native="_startDrag"
             @handleTop="handleTop"
-            @handleMinimize="handleMinimize"
+            @handleBall="handleBall"
             @handleMaximize="handleMaximize"
+            @handleMinimize="handleMinimize"
             @handleRestore="handleRestore"
             @closeWindow="closeWindow"
             @handleZoomIn="handleZoomIn"
@@ -62,15 +64,15 @@
           >
             <template #titleBarLeft>
               <!-- @slot 标题栏左侧区域-->
-              <slot name="titleBarLeft"/>
+              <slot name="titleBarLeft" :window-id="windowId" />
             </template>
             <template #default>
               <!-- @slot 标题栏中央区域-->
-              <slot name="titleBarCenter"/>
+              <slot name="titleBarCenter" :window-id="windowId" />
             </template>
             <template #titleBarRight>
               <!-- @slot 标题栏右侧区域-->
-              <slot name="titleBarRight"/>
+              <slot name="titleBarRight" :window-id="windowId" />
             </template>
           </title-bar>
         </slot>
@@ -86,6 +88,7 @@
           :window-state="windowState"
           :current-tabs="currentTabs"
           :current-tab-index="currentTabIndex"
+          :default-icon-src="defaultIconSrc"
           :style="`background-color: ${backgroundColor};
           height: 0;
              flex: 1 0 auto;`"
@@ -95,59 +98,237 @@
           @updateOutsideClickMaskShow="args => isOutsideClick = args"
         >
           <!-- @slot 窗口内容-->
-          <template #toolbar >
-            <slot name="toolbar" :currentTab="currentTabs[currentTabIndex]"/>
+          <template #toolbar>
+            <slot name="toolbar" :window-id="windowId" :current-tab="currentTabs[currentTabIndex]" />
           </template>
-          <template #leftSidebar >
-            <slot name="leftSidebar" :currentTab="currentTabs[currentTabIndex]"/>
+          <template #leftSidebar>
+            <slot name="leftSidebar" :window-id="windowId" :current-tab="currentTabs[currentTabIndex]" />
           </template>
           <template #default>
-            <slot :currentTab="currentTabs[currentTabIndex]"/>
+            <slot :window-id="windowId" :current-tab="currentTabs[currentTabIndex]" />
           </template>
-          <template #rightSidebar >
-            <slot name="rightSidebar" :currentTab="currentTabs[currentTabIndex]"/>
+          <template #rightSidebar>
+            <slot name="rightSidebar" :window-id="windowId" :current-tab="currentTabs[currentTabIndex]" />
           </template>
-          <template #footer >
-            <slot name="footer" :currentTab="currentTabs[currentTabIndex]"/>
+          <template #footer>
+            <slot name="footer" :window-id="windowId" :current-tab="currentTabs[currentTabIndex]" />
           </template>
         </content-wrapper>
         <!-- 可调整大小的边框 -->
-        <div class="resizer resizer-top"
-             @touchstart.stop="_startTouchDrag"
-             @mousedown.stop="_startResize('top')"/>
-        <div v-show="windowSizeStatus!=='maximize'"
-             class="resizer resizer-bottom"
-             @touchstart.stop="_startTouchResize('bottom')"
-             @mousedown.stop="_startResize('bottom')"/>
-        <div v-show="windowSizeStatus!=='maximize'"
-             class="resizer resizer-left"
-             @touchstart.stop="_startTouchResize('left')"
-             @mousedown.stop="_startResize('left')"/>
-        <div v-show="windowSizeStatus!=='maximize'"
-             class="resizer resizer-right"
-             @touchstart.stop="_startTouchResize('right')"
-             @mousedown.stop="_startResize('right')"/>
-        <div v-show="windowSizeStatus!=='maximize'"
-             class="resizer corner resizer-top-left"
-             @touchstart.stop="_startTouchResize('top-left')"
-             @mousedown.stop="_startResize('top-left')"/>
-        <div v-show="windowSizeStatus!=='maximize'"
-             class="resizer corner resizer-top-right"
-             @touchstart.stop="_startTouchResize('top-right')"
-             @mousedown.stop="_startResize('top-right')"/>
-        <div v-show="windowSizeStatus!=='maximize'"
-             class="resizer corner resizer-bottom-left"
-             @touchstart.stop="_startTouchResize('bottom-left')"
-             @mousedown.stop="_startResize('bottom-left')"/>
-        <div v-show="windowSizeStatus!=='maximize'"
-             class="resizer corner resizer-bottom-right"
-             @touchstart.stop="_startTouchResize('bottom-right')"
-             @mousedown.stop="_startResize('bottom-right')"/>
-        <div class="split-screen-mask" :style="screenMaskStyle"/>
+        <div
+          class="resizer resizer-top"
+          @touchstart.stop="_startTouchDrag"
+          @mousedown.stop="_startResize('top')"
+        />
+        <div
+          v-show="windowSizeStatus!=='maximize'"
+          class="resizer resizer-bottom"
+          @touchstart.stop="_startTouchResize('bottom')"
+          @mousedown.stop="_startResize('bottom')"
+        />
+        <div
+          v-show="windowSizeStatus!=='maximize'"
+          ref="resizerLeft"
+          class="resizer resizer-left"
+          @touchstart.stop="_startTouchResize('left')"
+          @mousedown.stop="_startResize('left')"
+        />
+        <div
+          v-show="windowSizeStatus!=='maximize'"
+          ref="resizerRight"
+          class="resizer resizer-right"
+          @touchstart.stop="_startTouchResize('right')"
+          @mousedown.stop="_startResize('right')"
+        />
+        <div
+          v-show="windowSizeStatus!=='maximize'"
+          class="resizer corner resizer-top-left"
+          @touchstart.stop="_startTouchResize('top-left')"
+          @mousedown.stop="_startResize('top-left')"
+        />
+        <div
+          v-show="windowSizeStatus!=='maximize'"
+          class="resizer corner resizer-top-right"
+          @touchstart.stop="_startTouchResize('top-right')"
+          @mousedown.stop="_startResize('top-right')"
+        />
+        <div
+          v-show="windowSizeStatus!=='maximize'"
+          class="resizer corner resizer-bottom-left"
+          @touchstart.stop="_startTouchResize('bottom-left')"
+          @mousedown.stop="_startResize('bottom-left')"
+        />
+        <div
+          v-show="windowSizeStatus!=='maximize'"
+          class="resizer corner resizer-bottom-right"
+          @touchstart.stop="_startTouchResize('bottom-right')"
+          @mousedown.stop="_startResize('bottom-right')"
+        />
+        <div class="split-screen-mask" :style="screenMaskStyle" />
+        <div class="split-screen-choose-mask" :style="screenMaskChooseStyle">
+          <div class="split-screen-choose-mask-item left-right-layout">
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='left-3-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='right-3-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+          </div>
+          <div class="split-screen-choose-mask-item left-right-layout-with-ratio">
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='left-4-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='right-2-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+          </div>
+          <div class="split-screen-choose-mask-item three-part-layout">
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='left-2-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='center-2-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='right-2-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+          </div>
+          <div class="split-screen-choose-mask-item three-part-layout-with-ratio">
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='left-1-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='center-4-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='right-1-6'"
+              @mouseleave="chooseLayout='none'"
+            />
+          </div>
+          <div class="split-screen-choose-mask-item four-part-layout">
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='top-left-3-3'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='top-right-3-3'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-left-3-3'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-right-3-3'"
+              @mouseleave="chooseLayout='none'"
+            />
+          </div>
+          <div class="split-screen-choose-mask-item nine-part-layout">
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='top-left-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='top-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='top-right-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='left-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='center-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='right-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-left-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-right-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+          </div>
+          <div class="split-screen-choose-mask-item focus-layout">
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='top-left-4-4'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='top-right-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='right-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-left-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+            <div
+              class="split-screen-choose-mask-item-inner"
+              @mouseenter="chooseLayout='bottom-right-2-2'"
+              @mouseleave="chooseLayout='none'"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <script>
@@ -160,26 +341,19 @@ import windowProps from '@/components/FloatWindow/props'
 import TitleBar from '@/components/FloatWindow/titleBar/index.vue'
 import FloatBall from '@/components/FloatWindow/floatBall/index.vue'
 import ContentWrapper from '@/components/FloatWindow/contentWrapper/index.vue'
-import { _convertToPx } from '@/components/FloatWindow/utils'
-
+import { _convertToVh, _convertToVw } from '@/components/FloatWindow/utils'
 export default {
-  mixins: [titleBarProps, actionProps, ballProps, contentProps, windowProps],
   name: 'FloatWindow',
   components: { ContentWrapper, FloatBall, TitleBar },
+  mixins: [titleBarProps, actionProps, ballProps, contentProps, windowProps],
   props: {
   },
-  mounted () {
-    this.windowId = this._generateUUID()
-    this._updateParentElementState()
-    this._initWindowPosition()
-    this._initWindowTabs()
-    this._initWindowEvent()
-  },
-  emits: ['outsideClick', 'clickFloatWindow', 'clickFloatBall', 'rightClickFloatBall',
+  emits: ['outsideClick', 'clickFloatWindow',
+    'clickFloatBall', 'rightClickFloatBall',
     'startDrag', 'stopDrag', 'startResize',
     'resize', 'stopResize', 'windowStatusChange',
     'dblclickFloatBall', 'closeWindow', 'beforeClose'],
-  data () {
+  data() {
     return {
       /**
        * 悬浮窗唯一标识
@@ -202,6 +376,14 @@ export default {
        */
       isTop: false,
       /**
+       * 是否选择布局
+       */
+      isChooseLayout: false,
+      /**
+       * 选择的布局
+       */
+      chooseLayout: 'none',
+      /**
        * 调整大小的方向
        */
       resizeDirection: null,
@@ -213,20 +395,21 @@ export default {
        * 存储窗口的状态信息
        */
       windowState: {
-        x: _convertToPx(this.defaultPosition.x, false),
-        y: _convertToPx(this.defaultPosition.y, true),
-        width: _convertToPx(this.defaultSize.width, false),
-        height: _convertToPx(this.defaultSize.height, true),
-        zIndex: 200
+        x: _convertToVw(this.defaultPosition.x, false),
+        y: _convertToVh(this.defaultPosition.y, true),
+        width: _convertToVw(this.defaultSize.width, false),
+        height: _convertToVh(this.defaultSize.height, true),
+        zIndex: 200,
+        transition: ''
       },
       /**
        * 父元素高度
        */
-      parentElementHeight: window.innerHeight,
+      parentElementHeight: 100,
       /**
        * 父元素宽度
        */
-      parentElementWidth: window.innerWidth,
+      parentElementWidth: 100,
       /**
        * 父元素X坐标(绝对位置)
        */
@@ -267,58 +450,105 @@ export default {
     ...mapState('floatWindow', ['maxZIndex']),
     /**
      * 计算窗口的样式
-     * @returns {{top: (string|string), left: (string|string), width: (string|string), position: (string)
+     * @returns {{top: (string|string), left: (string|string),
+     * width: (string|string), position: (string)
      * , height: string, contentHeight: string, zIndex: number}}
      */
-    internalWindowStyle () {
+    internalWindowStyle() {
       return {
         position: !this.parentLimitation && this.affix ? 'fixed' : 'absolute',
-        left: this.windowSizeStatus === 'maximize' ? `${this.parentElementX}px` : `${this.windowState.x}px`,
-        top: this.windowSizeStatus === 'maximize' ? `${this.parentElementY}px` : `${this.windowState.y}px`,
-        width: this.windowSizeStatus === 'maximize' ? `${this.parentElementWidth}px` : `${this.windowState.width}px`,
+        left: this.windowSizeStatus === 'maximize'
+          ? `${this.parentElementX}vw`
+          : `${this.windowState.x}vw`,
+        top: this.windowSizeStatus === 'maximize'
+          ? `${this.parentElementY}vh`
+          : `${this.windowState.y}vh`,
+        width: this.windowSizeStatus === 'maximize'
+          ? `${this.parentElementWidth}vw`
+          : `${this.windowState.width}vw`,
         height: this.windowSizeStatus === 'maximize'
-          ? `${this.parentElementHeight}px`
-          : `${this.windowState.height}px`,
+          ? `${this.parentElementHeight}vh`
+          : `${this.windowState.height}vh`,
         contentHeight: this.windowSizeStatus === 'maximize'
-          ? `${this.parentElementHeight - _convertToPx(this.titleBarHeight, true) - 12}px`
-          : `${this.windowState.height - _convertToPx(this.titleBarHeight, true) - 12}px`,
+          ? `${this.parentElementHeight -
+          _convertToVh(this.titleBarHeight, true) - 1.5}vh`
+          : `${this.windowState.height -
+          _convertToVh(this.titleBarHeight, true) - 1.5}vh`,
         zIndex: this.windowState.zIndex,
+        transition: this.windowSizeStatus === 'maximize'
+          ? 'width 0.3s, height 0.3s, left 0.3s, top 0.3s'
+          : this.windowState.transition,
         display: 'flex',
         flexDirection: 'column'
       }
     },
     /**
      * 计算悬浮球的样式
-     * @returns {{top: string, left: string, width: string, height: string, zIndex: number}}
+     * @returns {{top: string, left: string,
+     * width: string, height: string, zIndex: number}}
      */
-    internalBallStyle () {
+    internalBallStyle() {
       return {
         position: !this.parentLimitation && this.affix ? 'fixed' : 'absolute',
-        height: `${this.ballHeight}px`,
-        width: `${this.ballWidth}px`,
-        left: `${this.windowState.x}px`,
-        top: `${this.windowState.y}px`,
+        height: `${_convertToVh(this.ballHeight, true)}vh`,
+        width: `${_convertToVw(this.ballWidth, false)}vw`,
+        left: `${this.windowState.x}vw`,
+        top: `${this.windowState.y}vh`,
         zIndex: this.windowState.zIndex
+      }
+    },
+    screenMaskChooseStyle() {
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+
+      const element = this.$el
+      const parentElement = element.parentElement
+      let { left: rectParentElementX, top: rectParentElementY } = parentElement.getBoundingClientRect()
+      if (this.parentLimitation) {
+        rectParentElementX = rectParentElementX * 100 / screenWidth
+        rectParentElementY = rectParentElementY * 100 / screenHeight
+      } else {
+        rectParentElementX = 0
+        rectParentElementY = 0
+      }
+
+      if (!this.isDragging) {
+        return {
+          visibility: 'hidden',
+          opacity: 0,
+          top: `${rectParentElementY}vh`,
+          left: `${rectParentElementX + (0.20 * parentElementWidth)}vw`,
+          width: `${0.5 * parentElementWidth}vw`,
+          height: `${0.3 * parentElementHeight}vh`
+        }
+      }
+      if (this.isChooseLayout) {
+        return {
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY}vh`,
+          left: `${rectParentElementX + (0.20 * parentElementWidth)}vw`,
+          width: `${0.5 * parentElementWidth}vw`,
+          height: `${0.3 * parentElementHeight}vh`
+        }
+      }
+      return {
+        visibility: 'hidden',
+        opacity: 0,
+        top: `${rectParentElementY}vh`,
+        left: `${rectParentElementX + (0.20 * parentElementWidth)}vw`,
+        width: `${0.5 * parentElementWidth}vw`,
+        height: `${0.3 * parentElementHeight}vh`
       }
     },
     /**
      * 计算形态切换提示遮罩的尺寸
      * @returns {{width: string, height: string}}
      */
-    screenMaskStyle () {
+    screenMaskStyle() {
       const currentAzimuth = this.currentAzimuth
-      const {
-        x: windowX, y: windowY,
-        width: windowWidth, height: windowHeight
-      } = this.windowState
-
-      const nullStatus = {
-        display: 'none',
-        width: '0px',
-        height: '0px',
-        top: '0px',
-        left: '0px'
-      }
       const element = this.$el
       if (!element) {
         return nullStatus
@@ -327,26 +557,288 @@ export default {
       if (!parentElement) {
         return nullStatus
       }
+
       let { left: rectParentElementX, top: rectParentElementY } = parentElement.getBoundingClientRect()
+
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+
       let parentElementWidth = this.parentElementWidth
       let parentElementHeight = this.parentElementHeight
-      if (!this.parentLimitation) {
+
+      if (this.parentLimitation) {
+        rectParentElementX = rectParentElementX * 100 / screenWidth
+        rectParentElementY = rectParentElementY * 100 / screenHeight
+      } else {
         rectParentElementX = 0
         rectParentElementY = 0
-        parentElementWidth = window.innerWidth
-        parentElementHeight = window.innerHeight
+        parentElementWidth = 100
+        parentElementHeight = 100
       }
+
+      const {
+        x: windowX, y: windowY,
+        width: windowWidth, height: windowHeight
+      } = this.windowState
+
+      const nullStatus = {
+        width: `${windowWidth}vw`,
+        height: `${windowHeight}vh`,
+        top: `${windowY - this.parentElementY + rectParentElementY}vh`,
+        left: `${windowX - this.parentElementX + rectParentElementX}vw`,
+        visibility: 'hidden',
+        opacity: 0
+      }
+
       const maximizeStatus = {
         display: 'block',
-        width: `${parentElementWidth}px`,
-        height: `${parentElementHeight}px`,
-        top: `${rectParentElementY}px`,
-        left: `${rectParentElementX}px`
+        visibility: 'visible',
+        opacity: 1,
+        width: `${parentElementWidth}vw`,
+        height: `${parentElementHeight}vh`,
+        top: `${rectParentElementY}vh`,
+        left: `${rectParentElementX}vw`
       }
       // 全屏状态下，不提示
       if (this.windowSizeStatus === 'maximize') {
         return nullStatus
       }
+
+      if (this.chooseLayout !== 'none') {
+        switch (this.chooseLayout) {
+          case 'left-1-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 6}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'left-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY + (parentElementHeight / 3)}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'left-2-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'left-3-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 2}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'center-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY + (parentElementHeight / 3)}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 3)}vw`
+            }
+          case 'center-2-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 3)}vw`
+            }
+          case 'center-4-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${(parentElementWidth * 2) / 3}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 6)}vw`
+            }
+          case 'right-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY + (parentElementHeight / 3)}vh`,
+              left: `${rectParentElementX + (parentElementWidth * 2) / 3}vw`
+            }
+          case 'right-1-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 6}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + (parentElementWidth * 5) / 6}vw`
+            }
+          case 'right-2-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + (parentElementWidth * 2) / 3}vw`
+            }
+          case 'right-3-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 2}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 2)}vw`
+            }
+          case 'left-4-6':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${(parentElementWidth * 2) / 3}vw`,
+              height: `${parentElementHeight}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'top-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 3)}vw`
+            }
+          case 'top-left-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'top-left-3-3':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 2}vw`,
+              height: `${parentElementHeight / 2}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'top-left-4-4':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${(parentElementWidth * 2) / 3}vw`,
+              height: `${(parentElementHeight * 2) / 3}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'top-right-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + ((parentElementWidth * 2) / 3)}vw`
+            }
+          case 'top-right-3-3':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 2}vw`,
+              height: `${parentElementHeight / 2}vh`,
+              top: `${rectParentElementY}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 2)}vw`
+            }
+          case 'bottom-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY + ((parentElementHeight * 2) / 3)}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 3)}vw`
+            }
+          case 'bottom-left-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY + ((parentElementHeight * 2) / 3)}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'bottom-left-3-3':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 2}vw`,
+              height: `${parentElementHeight / 2}vh`,
+              top: `${rectParentElementY + (parentElementHeight / 2)}vh`,
+              left: `${rectParentElementX}vw`
+            }
+          case 'bottom-right-2-2':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 3}vw`,
+              height: `${parentElementHeight / 3}vh`,
+              top: `${rectParentElementY + ((parentElementHeight * 2) / 3)}vh`,
+              left: `${rectParentElementX + ((parentElementWidth * 2) / 3)}vw`
+            }
+          case 'bottom-right-3-3':
+            return {
+              display: 'block',
+              visibility: 'visible',
+              opacity: 1,
+              width: `${parentElementWidth / 2}vw`,
+              height: `${parentElementHeight / 2}vh`,
+              top: `${rectParentElementY + (parentElementHeight / 2)}vh`,
+              left: `${rectParentElementX + (parentElementWidth / 2)}vw`
+            }
+        }
+      }
+
       // 调整大小状态(补齐提示)
       if (this.isResizing) {
         // 全屏补齐
@@ -362,10 +854,12 @@ export default {
             this.resizeDirection === 'bottom')) {
           return {
             display: 'block',
-            width: `${windowWidth}px`,
-            height: `${parentElementHeight}px`,
-            top: `${rectParentElementY}px`,
-            left: `${windowX - this.parentElementX + rectParentElementX}px`
+            visibility: 'visible',
+            opacity: 1,
+            width: `${windowWidth}vw`,
+            height: `${parentElementHeight}vh`,
+            top: `${rectParentElementY}vh`,
+            left: `${windowX - this.parentElementX + rectParentElementX}vw`
           }
         }
         // 左右两侧补齐
@@ -374,10 +868,12 @@ export default {
             this.resizeDirection === 'right')) {
           return {
             display: 'block',
-            width: `${parentElementWidth}px`,
-            height: `${windowHeight}px`,
-            top: `${windowY - this.parentElementY + rectParentElementY}px`,
-            left: `${rectParentElementX}px`
+            visibility: 'visible',
+            opacity: 1,
+            width: `${parentElementWidth}vw`,
+            height: `${windowHeight}vh`,
+            top: `${windowY - this.parentElementY + rectParentElementY}vh`,
+            left: `${rectParentElementX}vw`
           }
         }
 
@@ -443,20 +939,24 @@ export default {
       if (currentAzimuth === 'left') {
         return {
           display: 'block',
-          top: `${rectParentElementY}px`,
-          left: `${rectParentElementX}px`,
-          height: `${parentElementHeight}px`,
-          width: `${parentElementWidth / 2}px`
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY}vh`,
+          left: `${rectParentElementX}vw`,
+          height: `${parentElementHeight}vh`,
+          width: `${parentElementWidth / 2}vw`
         }
       }
 
       if (currentAzimuth === 'right') {
         return {
           display: 'block',
-          top: `${rectParentElementY}px`,
-          left: `${rectParentElementX + (parentElementWidth / 2)}px`,
-          height: `${parentElementHeight}px`,
-          width: `${parentElementWidth / 2}px`
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY}vh`,
+          left: `${rectParentElementX + (parentElementWidth / 2)}vw`,
+          height: `${parentElementHeight}vh`,
+          width: `${parentElementWidth / 2}vw`
         }
       }
 
@@ -466,49 +966,59 @@ export default {
       if (currentAzimuth === 'bottom') {
         return {
           display: 'block',
-          top: `${rectParentElementY + (parentElementHeight / 2)}px`,
-          left: `${rectParentElementX}px`,
-          height: `${parentElementHeight / 2}px`,
-          width: `${parentElementWidth}px`
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY + (parentElementHeight / 2)}vh`,
+          left: `${rectParentElementX}vw`,
+          height: `${parentElementHeight / 2}vh`,
+          width: `${parentElementWidth}vw`
         }
       }
 
       if (currentAzimuth === 'top-left') {
         return {
           display: 'block',
-          top: `${rectParentElementY}px`,
-          left: `${rectParentElementX}px`,
-          height: `${parentElementHeight / 2}px`,
-          width: `${parentElementWidth / 2}px`
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY}vw`,
+          left: `${rectParentElementX}vw`,
+          height: `${parentElementHeight / 2}vh`,
+          width: `${parentElementWidth / 2}vw`
         }
       }
 
       if (currentAzimuth === 'top-right') {
         return {
           display: 'block',
-          top: `${rectParentElementY}px`,
-          left: `${rectParentElementX + (parentElementWidth / 2)}px`,
-          height: `${parentElementHeight / 2}px`,
-          width: `${parentElementWidth / 2}px`
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY}vh`,
+          left: `${rectParentElementX + (parentElementWidth / 2)}vw`,
+          height: `${parentElementHeight / 2}vh`,
+          width: `${parentElementWidth / 2}vw`
         }
       }
 
       if (currentAzimuth === 'bottom-left') {
         return {
           display: 'block',
-          top: `${rectParentElementY + (parentElementHeight / 2)}px`,
-          left: `${rectParentElementX}px`,
-          height: `${parentElementHeight / 2}px`,
-          width: `${parentElementWidth / 2}px`
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY + (parentElementHeight / 2)}vh`,
+          left: `${rectParentElementX}vw`,
+          height: `${parentElementHeight / 2}vh`,
+          width: `${parentElementWidth / 2}vw`
         }
       }
       if (currentAzimuth === 'bottom-right') {
         return {
           display: 'block',
-          top: `${rectParentElementY + (parentElementHeight / 2)}px`,
-          left: `${rectParentElementX + (parentElementWidth / 2)}px`,
-          height: `${parentElementHeight / 2}px`,
-          width: `${parentElementWidth / 2}px`
+          visibility: 'visible',
+          opacity: 1,
+          top: `${rectParentElementY + (parentElementHeight / 2)}vh`,
+          left: `${rectParentElementX + (parentElementWidth / 2)}vw`,
+          height: `${parentElementHeight / 2}vh`,
+          width: `${parentElementWidth / 2}vw`
         }
       }
 
@@ -517,7 +1027,7 @@ export default {
     /**
      * 当前位于屏幕的哪个方位
      */
-    currentAzimuth () {
+    currentAzimuth() {
       const parentElementWidth = this.parentElementWidth
       const parentElementHeight = this.parentElementHeight
       const parentElementX = this.parentElementX
@@ -525,22 +1035,22 @@ export default {
 
       let { x, y, width, height } = this.windowState
 
-      if (this.windowSizeStatus === 'minimize') {
-        x = _convertToPx(this.ballWidth, false)
-        y = _convertToPx(this.ballHeight, true)
+      if (this.windowSizeStatus === 'ball') {
+        x = _convertToVw(this.ballWidth, false)
+        y = _convertToVh(this.ballHeight, true)
       }
       let horizontal = null
       let vertical = null
 
-      if (y < parentElementY + 10) {
+      if (y < parentElementY + 0.8) {
         vertical = 'top'
-      } else if (y > parentElementY + parentElementHeight - height - 10) {
+      } else if (y > parentElementY + parentElementHeight - height - 0.8) {
         vertical = 'bottom'
       }
 
-      if (x < parentElementX + 10) {
+      if (x < parentElementX + 0.8) {
         horizontal = 'left'
-      } else if (x > parentElementX + parentElementWidth - width - 10) {
+      } else if (x > parentElementX + parentElementWidth - width - 0.8) {
         horizontal = 'right'
       }
       if (vertical && horizontal) {
@@ -560,13 +1070,13 @@ export default {
     /**
      * 当前拖动的方向
      */
-    currentDragDirection () {
+    currentDragDirection() {
       const { x: startX, y: startY } = this.startDragPosition
       const { x: endX, y: endY } = this.startPosition
       const deltaX = endX - startX
       const deltaY = endY - startY
       // 阈值
-      const threshold = 10
+      const threshold = 0.8
       // 判断方向
       if (deltaX === 0 && deltaY === 0) {
         return 'stop'
@@ -590,20 +1100,38 @@ export default {
       return 'stop'
     }
   },
+  watch: {
+  },
+  mounted() {
+    this.windowId = this._generateUUID()
+    this._updateParentElementState()
+    this._initWindowPosition()
+    this._initWindowTabs()
+    this._initWindowEvent()
+    // 更新最大索引
+    this._handleClickFloatWindow()
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this._handleOutsideClick)
+    window.removeEventListener('resize', this._handleOutsideResize)
+  },
   methods: {
-    _convertToPx,
+    _convertToVh,
+    _convertToVw,
     ...mapMutations('floatWindow', ['updateMaxZIndex']),
     /**
      * 更新父元素状态
      * @private
      */
-    _updateParentElementState () {
+    _updateParentElementState() {
+      const screenHeight = window.innerHeight
+      const screenWidth = window.innerWidth
       this.$nextTick(() => {
         if (!this.parentLimitation) {
           this.parentElementX = 0
           this.parentElementY = 0
-          this.parentElementWidth = window.innerWidth
-          this.parentElementHeight = window.innerHeight
+          this.parentElementWidth = 100
+          this.parentElementHeight = 100
           return
         }
         const parentElement = this.$el?.parentElement
@@ -614,27 +1142,27 @@ export default {
         const elementRect = parentElement.getBoundingClientRect()
         const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
         const scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft
-        this.parentElementX = elementRect.left + scrollLeft
-        this.parentElementY = elementRect.top + scrollTop
-        this.parentElementWidth = elementRect.width
-        this.parentElementHeight = elementRect.height
+        this.parentElementX = (elementRect.left + scrollLeft) * 100 / screenWidth
+        this.parentElementY = (elementRect.top + scrollTop) * 100 / screenHeight
+        this.parentElementWidth = (elementRect.width * 100) / screenWidth
+        this.parentElementHeight = (elementRect.height * 100) / screenHeight
       })
     },
     /**
      * 初始化窗口位置
      * @private
      */
-    _initWindowPosition () {
+    _initWindowPosition() {
       this.$nextTick(() => {
-        this.windowState.x = this.parentElementX + _convertToPx(this.defaultPosition.x, false)
-        this.windowState.y = this.parentElementY + _convertToPx(this.defaultPosition.y, true)
+        this.windowState.x = this.parentElementX + _convertToVw(this.defaultPosition.x, false)
+        this.windowState.y = this.parentElementY + _convertToVh(this.defaultPosition.y, true)
       })
     },
     /**
      * 初始化窗口标签页
      * @private
      */
-    _initWindowTabs () {
+    _initWindowTabs() {
       const currentTabs = this.tabs
       if (currentTabs.length === 0) {
         currentTabs.push({
@@ -660,7 +1188,7 @@ export default {
      * 初始化窗口事件
      * @private
      */
-    _initWindowEvent () {
+    _initWindowEvent() {
       document.addEventListener('click', this._handleOutsideClick)
       // document.addEventListener('scroll', this._handleOutsideScroll)
       window.addEventListener('resize', this._handleOutsideResize)
@@ -671,7 +1199,7 @@ export default {
      * @returns {Promise<unknown>}
      * @private
      */
-    _create (cb) {
+    _create(cb) {
       typeof cb === 'function' && cb.call(this, this)
       return new Promise(resolve => {
         this.resolve = resolve
@@ -683,7 +1211,7 @@ export default {
      * @returns {*}
      * @private
      */
-    _generateUUID () {
+    _generateUUID() {
       return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
       )
@@ -692,13 +1220,13 @@ export default {
      * 窗口大小检查
      * @private
      */
-    _windowSizeCheck ({ width, height }) {
+    _windowSizeCheck({ width, height }) {
       let { width: minWidth, height: minHeight } = this.minSize
       let { width: maxWidth, height: maxHeight } = this.maxSize
-      minWidth = _convertToPx(minWidth, false)
-      maxWidth = _convertToPx(maxWidth, false)
-      minHeight = _convertToPx(minHeight, true)
-      maxHeight = _convertToPx(maxHeight, true)
+      minWidth = _convertToVw(minWidth, false)
+      maxWidth = _convertToVw(maxWidth, false)
+      minHeight = _convertToVh(minHeight, true)
+      maxHeight = _convertToVh(maxHeight, true)
 
       // 确保不超出最小值和最大值
       width = Math.max(minWidth, width)
@@ -710,22 +1238,20 @@ export default {
     /**
      * 处理外部调整大小
      */
-    _handleOutsideResize () {
-      console.log('触发了外部调整大小')
+    _handleOutsideResize() {
       this._updateParentElementState()
     },
     /**
      * 处理外部滚动事件
      */
-    _handleOutsideScroll () {
-      console.log('触发了外部滚动事件')
+    _handleOutsideScroll() {
       // this._updateParentElementState()
     },
     /**
      * 处理外部点击事件
      * @param event
      */
-    _handleOutsideClick (event) {
+    _handleOutsideClick(event) {
       if (!this.$el.contains(event.target)) {
         this.isOutsideClick = true
         this.$emit('outsideClick')
@@ -737,19 +1263,19 @@ export default {
      * 窗口点击处理
      * @private
      */
-    _handleClickFloatWindow () {
+    _handleClickFloatWindow() {
       this.isOutsideClick = false
       this.$emit('clickFloatWindow')
-      if (this.isTop) {
-        return
-      }
       this._updateZIndex()
     },
     /**
      * 更新ZIndex
      * @private
      */
-    _updateZIndex () {
+    _updateZIndex() {
+      if (this.isTop) {
+        return
+      }
       const newMaxZIndex = this.maxZIndex + 10
       this.windowState.zIndex = newMaxZIndex
       this.updateMaxZIndex(newMaxZIndex)
@@ -758,7 +1284,7 @@ export default {
      * 悬浮球点击处理
      * @private
      */
-    _handleClickFloatBall () {
+    _handleClickFloatBall() {
       /**
        * 点击悬浮球时调用
        * @event clickFloatBall
@@ -769,7 +1295,7 @@ export default {
      * 悬浮球右点击处理
      * @private
      */
-    _handleRightClickFloatBall () {
+    _handleRightClickFloatBall() {
       /**
        * 右点击悬浮球时调用
        * @event rightClickFloatBall
@@ -781,7 +1307,7 @@ export default {
      * @param event
      * @private
      */
-    _startDrag (event) {
+    _startDrag(event) {
       if (!this.isActionEnable('drag')) {
         return
       }
@@ -789,7 +1315,7 @@ export default {
       event.preventDefault()
       this._updateZIndex()
       this.isDragging = true
-
+      console.log('startDrag', event.clientY)
       this._updateStartDragPosition({ newX: event.clientX, newY: event.clientY })
 
       this.$emit('startDrag', { x: event.clientX, y: event.clientY })
@@ -802,7 +1328,7 @@ export default {
      * @param event
      * @private
      */
-    _startTouchDrag (event) {
+    _startTouchDrag(event) {
       if (!this.isActionEnable('drag')) {
         return
       }
@@ -825,12 +1351,15 @@ export default {
      * @param event
      * @private
      */
-    _drag (event) {
+    _drag(event) {
       event.preventDefault()
       if (!this.isDragging) return
+
+      const screenHeight = window.innerHeight
+      const screenWidth = window.innerWidth
       // 计算偏移量
-      const deltaX = event.clientX - this.startPosition.x
-      const deltaY = event.clientY - this.startPosition.y
+      const deltaX = (event.clientX * 100 / screenWidth) - this.startPosition.x
+      const deltaY = (event.clientY * 100 / screenHeight) - this.startPosition.y
       // 更新窗口的新位置
       const newX = this.windowState.x + deltaX
       const newY = this.windowState.y + deltaY
@@ -838,22 +1367,27 @@ export default {
       this._applyBoundaryCheck(newX, newY)
 
       this._updateStartPosition({ newX: event.clientX, newY: event.clientY })
+
+      if (this.currentAzimuth.startsWith('top') && this.windowSizeStatus === 'normal') {
+        this.isChooseLayout = true
+      }
     },
     /**
      * 拖动窗口(移动端)
      * @param event
      * @private
      */
-    _touchDrag (event) {
+    _touchDrag(event) {
       event.preventDefault()
       if (!this.isDragging) return
 
       this.moved = true
       const touch = event.touches[0]
-
+      const screenHeight = window.innerHeight
+      const screenWidth = window.innerWidth
       // 计算偏移量
-      const deltaX = touch.clientX - this.startPosition.x
-      const deltaY = touch.clientY - this.startPosition.y
+      const deltaX = (touch.clientX * 100 / screenWidth) - this.startPosition.x
+      const deltaY = (touch.clientY * 100 / screenHeight) - this.startPosition.y
 
       // 更新窗口的新位置
       const newX = this.windowState.x + deltaX
@@ -863,6 +1397,10 @@ export default {
       this._applyTouchBoundaryCheck(newX, newY)
 
       this._updateStartPosition({ newX: touch.clientX, newY: touch.clientY })
+
+      if (this.currentAzimuth.startsWith('top')) {
+        this.isChooseLayout = true
+      }
     },
     /**
      * 更新窗口开始位置
@@ -870,19 +1408,27 @@ export default {
      * @param newY
      * @private
      */
-    _updateStartPosition ({ newX, newY }) {
+    _updateStartPosition({ newX, newY }) {
       if (newX) {
+        const screenWidth = window.innerWidth
+        newX = ((newX * 100) / screenWidth)
         this.startPosition.x = newX
       }
       if (newY) {
+        const screenHeight = window.innerHeight
+        newY = ((newY * 100) / screenHeight)
         this.startPosition.y = newY
       }
     },
-    _updateStartDragPosition ({ newX, newY }) {
+    _updateStartDragPosition({ newX, newY }) {
       if (newX) {
+        const screenWidth = window.innerWidth
+        newX = ((newX * 100) / screenWidth)
         this.startDragPosition.x = newX
       }
       if (newY) {
+        const screenHeight = window.innerHeight
+        newY = ((newY * 100) / screenHeight)
         this.startDragPosition.y = newY
       }
     },
@@ -892,15 +1438,15 @@ export default {
      * @param newY
      * @private
      */
-    _applyBoundaryCheck (newX, newY) {
+    _applyBoundaryCheck(newX, newY) {
       const parentElementWidth = this.parentElementWidth
       const parentElementHeight = this.parentElementHeight
       const parentElementX = this.parentElementX
       const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
-      const ballWidth = _convertToPx(this.ballWidth, false)
-      const ballHeight = _convertToPx(this.ballHeight, true)
+      const ballWidth = _convertToVw(this.ballWidth, false)
+      const ballHeight = _convertToVh(this.ballHeight, true)
       if (this.windowSizeStatus === 'normal' || this.windowSizeStatus === 'splitScreen') {
         newX = Math.min(
           Math.max(newX, parentElementX),
@@ -909,7 +1455,7 @@ export default {
         newY = Math.min(
           Math.max(newY, parentElementY),
           parentElementY + parentElementHeight - windowHeight)
-      } else if (this.windowSizeStatus === 'minimize') {
+      } else if (this.windowSizeStatus === 'ball') {
         newX = Math.min(
           Math.max(newX, parentElementX),
           parentElementX + parentElementWidth - ballWidth)
@@ -926,15 +1472,15 @@ export default {
      * @param newY
      * @private
      */
-    _applyTouchBoundaryCheck (newX, newY) {
+    _applyTouchBoundaryCheck(newX, newY) {
       const parentElementWidth = this.parentElementWidth
       const parentElementHeight = this.parentElementHeight
       const parentElementX = this.parentElementX
       const parentElementY = this.parentElementY
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
-      const ballWidth = _convertToPx(this.ballWidth, false)
-      const ballHeight = _convertToPx(this.ballHeight, true)
+      const ballWidth = _convertToVw(this.ballWidth, false)
+      const ballHeight = _convertToVh(this.ballHeight, true)
 
       if (this.windowSizeStatus === 'normal' || this.windowSizeStatus === 'splitScreen') {
         newX = Math.min(
@@ -944,7 +1490,7 @@ export default {
         newY = Math.min(
           Math.max(newY, parentElementY),
           parentElementY + parentElementHeight - windowHeight)
-      } else if (this.windowSizeStatus === 'minimize') {
+      } else if (this.windowSizeStatus === 'ball') {
         newX = Math.min(
           Math.max(newX, parentElementX),
           parentElementX + parentElementWidth - ballWidth)
@@ -960,13 +1506,19 @@ export default {
      * 停止拖动
      * @private
      */
-    _stopDrag () {
+    _stopDrag() {
       this._enableTextSelection()
       this.isDragging = false
+      this.isChooseLayout = false
       document.removeEventListener('mousemove', this._drag)
       document.removeEventListener('mouseup', this._stopDrag)
       const nowX = this.windowState.x
       const nowY = this.windowState.y
+      // 处理选择布局逻辑
+      if (this.chooseLayout !== 'none') {
+        this._handleChooseLayout()
+        return
+      }
       if (this.windowSizeStatus === 'splitScreen') {
         this._handleSplitScreen({ nowX, nowY })
         return
@@ -988,12 +1540,13 @@ export default {
      * 停止拖动(移动端)
      * @private
      */
-    _stopTouchDrag () {
+    _stopTouchDrag() {
       this._enableTextSelection()
       this.isDragging = false
+      this.isChooseLayout = false
       window.removeEventListener('touchmove', this._touchDrag)
       window.removeEventListener('touchend', this._stopTouchDrag)
-      if (this.windowSizeStatus === 'minimize' && !this.moved) {
+      if (this.windowSizeStatus === 'ball' && !this.moved) {
         // 暂时先处理悬浮球双击事件
         this.handleRestore()
         return
@@ -1015,8 +1568,174 @@ export default {
         }
         return
       }
+      // 处理选择布局逻辑
+      if (this.chooseLayout !== 'none') {
+        this._handleChooseLayout()
+        return
+      }
       this._handleSplitScreen({ nowX, nowY })
       this._handleStickToEdges({ nowX, nowY })
+    },
+    /**
+     * 处理选择布局
+     * @private
+     */
+    _handleChooseLayout() {
+      this.windowSizeStatus = 'splitScreen'
+      const parentElementWidth = this.parentElementWidth
+      const parentElementHeight = this.parentElementHeight
+      const parentElementX = this.parentElementX
+      const parentElementY = this.parentElementY
+
+      let nowX = 0
+      let nowY = 0
+      let newWidth = 0
+      let newHeight = 0
+      // 以下是选择布局情况判断
+      const chooseLayout = this.chooseLayout
+      switch (chooseLayout) {
+        case 'left-1-6':
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = parentElementWidth / 6
+          newHeight = parentElementHeight
+          break
+        case 'left-2-2':
+          nowX = parentElementX
+          nowY = parentElementY + (parentElementHeight / 3)
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'left-2-6':
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight
+          break
+        case 'left-3-6':
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight
+          break
+        case 'center-2-2':
+          nowX = parentElementX + (parentElementWidth / 3)
+          nowY = parentElementY + (parentElementHeight / 3)
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'center-2-6':
+          nowX = parentElementX + (parentElementWidth / 3)
+          nowY = parentElementY
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight
+          break
+        case 'center-4-6':
+          nowX = parentElementX + (parentElementWidth / 6)
+          nowY = parentElementY
+          newWidth = (parentElementWidth * 2) / 3
+          newHeight = parentElementHeight
+          break
+        case 'right-2-2':
+          nowX = parentElementX + (parentElementWidth * 2) / 3
+          nowY = parentElementY + (parentElementHeight / 3)
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'right-1-6':
+          nowX = parentElementX + (parentElementWidth * 5) / 6
+          nowY = parentElementY
+          newWidth = parentElementWidth / 6
+          newHeight = parentElementHeight
+          break
+        case 'right-2-6':
+          nowX = parentElementX + (parentElementWidth * 2) / 3
+          nowY = parentElementY
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight
+          break
+        case 'right-3-6':
+          nowX = parentElementX + (parentElementWidth / 2)
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight
+          break
+        case 'left-4-6':
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = (parentElementWidth * 2) / 3
+          newHeight = parentElementHeight
+          break
+        case 'top-2-2':
+          nowX = parentElementX + (parentElementWidth / 3)
+          nowY = parentElementY
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'top-left-2-2':
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'top-left-3-3':
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
+          break
+        case 'top-left-4-4':
+          nowX = parentElementX
+          nowY = parentElementY
+          newWidth = (parentElementWidth * 2) / 3
+          newHeight = (parentElementHeight * 2) / 3
+          break
+        case 'top-right-2-2':
+          nowX = parentElementX + ((parentElementWidth * 2) / 3)
+          nowY = parentElementY
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'top-right-3-3':
+          nowX = parentElementX + (parentElementWidth / 2)
+          nowY = parentElementY
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
+          break
+        case 'bottom-2-2':
+          nowX = parentElementX + (parentElementWidth / 3)
+          nowY = parentElementY + ((parentElementHeight * 2) / 3)
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'bottom-left-2-2':
+          nowX = parentElementX
+          nowY = parentElementY + ((parentElementHeight * 2) / 3)
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'bottom-left-3-3':
+          nowX = parentElementX
+          nowY = parentElementY + (parentElementHeight / 2)
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
+          break
+        case 'bottom-right-2-2':
+          nowX = parentElementX + ((parentElementWidth * 2) / 3)
+          nowY = parentElementY + ((parentElementHeight * 2) / 3)
+          newWidth = parentElementWidth / 3
+          newHeight = parentElementHeight / 3
+          break
+        case 'bottom-right-3-3':
+          nowX = parentElementX + (parentElementWidth / 2)
+          nowY = parentElementY + (parentElementHeight / 2)
+          newWidth = parentElementWidth / 2
+          newHeight = parentElementHeight / 2
+          break
+      }
+      this.updateWindowSizeWithAnimation({ newWidth, newHeight })
+      this.updateWindowPosition({ newX: nowX, newY: nowY })
+      this.$emit('stopDrag', { nowX, nowY })
     },
     /**
      * 处理分屏
@@ -1024,7 +1743,7 @@ export default {
      * @param nowY
      * @private
      */
-    _handleSplitScreen ({ nowX, nowY }) {
+    _handleSplitScreen({ nowX, nowY }) {
       const parentElementWidth = this.parentElementWidth
       const parentElementHeight = this.parentElementHeight
       const parentElementX = this.parentElementX
@@ -1032,8 +1751,8 @@ export default {
       const windowWidth = this.windowState.width
       const windowHeight = this.windowState.height
       const currentDragDirection = this.currentDragDirection
-      // 最小化情况下，不分屏
-      if (this.windowSizeStatus === 'minimize') {
+      // 悬浮球情况下，不分屏
+      if (this.windowSizeStatus === 'ball') {
         return
       }
       if (this.isActionEnable('splitScreen')) {
@@ -1065,7 +1784,7 @@ export default {
         }
         // 在屏幕中心，不分屏
         if (currentAzimuth === 'center') {
-          this.updateWindowSize({ newWidth, newHeight })
+          this.updateWindowSizeWithAnimation({ newWidth, newHeight })
           this.updateWindowPosition({ newX: nowX, newY: nowY })
           this.$emit('stopDrag', { nowX, nowY })
           return
@@ -1124,7 +1843,7 @@ export default {
           newWidth = parentElementWidth / 2
           newHeight = parentElementHeight / 2
         }
-        this.updateWindowSize({ newWidth, newHeight })
+        this.updateWindowSizeWithAnimation({ newWidth, newHeight })
         this.updateWindowPosition({ newX: nowX, newY: nowY })
         this.$emit('stopDrag', { nowX, nowY })
       }
@@ -1135,16 +1854,16 @@ export default {
      * @param nowY
      * @private
      */
-    _handleStickToEdges ({ nowX, nowY }) {
+    _handleStickToEdges({ nowX, nowY }) {
       const parentElementWidth = this.parentElementWidth
       const windowWidth = this.windowState.width
       const parentElementX = this.parentElementX
-      const ballWidth = _convertToPx(this.ballWidth, false)
+      const ballWidth = _convertToVw(this.ballWidth, false)
       if (this.windowSizeStatus === 'splitScreen') {
         return
       }
       if (this.isActionEnable('stickToEdges')) {
-        const edgeTolerance = _convertToPx(this.edgeTolerance)
+        const edgeTolerance = _convertToVw(this.edgeTolerance)
         if (nowX <= edgeTolerance) {
           nowX = parentElementX
           this.updateWindowPosition({ newX: nowX })
@@ -1155,7 +1874,7 @@ export default {
           if (nowX >= parentElementX + parentElementWidth - windowWidth - edgeTolerance) {
             nowX = parentElementX + parentElementWidth - windowWidth
           }
-        } else if (this.windowSizeStatus === 'minimize') {
+        } else if (this.windowSizeStatus === 'ball') {
           if (nowX >= parentElementX + parentElementWidth - ballWidth - edgeTolerance) {
             nowX = parentElementX + parentElementWidth - ballWidth
           }
@@ -1169,7 +1888,7 @@ export default {
      * @param direction
      * @private
      */
-    _startResize (direction) {
+    _startResize(direction) {
       /**
        * 开始调整悬浮窗大小时调用
        * @event startResize
@@ -1190,7 +1909,7 @@ export default {
      * @param direction
      * @private
      */
-    _startTouchResize (direction) {
+    _startTouchResize(direction) {
       /**
        * 开始调整悬浮窗大小时调用
        * @event startResize
@@ -1212,17 +1931,20 @@ export default {
      * @param event
      * @private
      */
-    _resize (event) {
+    _resize(event) {
       event.preventDefault()
       if (!this.isResizing) {
         return
       }
-      const deltaX = event.clientX - this.startPosition.x
-      const deltaY = event.clientY - this.startPosition.y
+
+      const screenHeight = window.innerHeight
+      const screenWidth = window.innerWidth
+      // 计算偏移量
+      const deltaX = (event.clientX * 100 / screenWidth) - this.startPosition.x
+      const deltaY = (event.clientY * 100 / screenHeight) - this.startPosition.y
 
       const { x: oldX, y: oldY, width: oldWidth, height: oldHeight } = this.windowState
       let { x: newX, y: newY, width: newWidth, height: newHeight } = this.windowState
-
       switch (this.resizeDirection) {
         case 'top':
           newY += deltaY
@@ -1275,18 +1997,21 @@ export default {
      * @param event
      * @private
      */
-    _touchResize (event) {
+    _touchResize(event) {
       event.preventDefault()
       if (!this.isResizing) {
         return
       }
       const touch = event.touches[0]
-      const deltaX = touch.clientX - this.startPosition.x
-      const deltaY = touch.clientY - this.startPosition.y
+
+      const screenHeight = window.innerHeight
+      const screenWidth = window.innerWidth
+      // 计算偏移量
+      const deltaX = (touch.clientX * 100 / screenWidth) - this.startPosition.x
+      const deltaY = (touch.clientY * 100 / screenHeight) - this.startPosition.y
 
       const { x: oldX, y: oldY, width: oldWidth, height: oldHeight } = this.windowState
       let { x: newX, y: newY, width: newWidth, height: newHeight } = this.windowState
-
       switch (this.resizeDirection) {
         case 'top':
           newY += deltaY
@@ -1338,7 +2063,7 @@ export default {
     /**
      * 处理补齐
      */
-    _handlePadded () {
+    _handlePadded() {
       const parentElementWidth = this.parentElementWidth
       const parentElementHeight = this.parentElementHeight
       const parentElementX = this.parentElementX
@@ -1360,20 +2085,20 @@ export default {
       // 上下两侧补齐
       if (windowHeight > 0.8 * parentElementHeight) {
         this.updateWindowPosition({ newY: parentElementY })
-        this.updateWindowSize({ newHeight: parentElementHeight })
+        this.updateWindowSizeWithAnimation({ newHeight: parentElementHeight })
       }
 
       // 左右两侧补齐
       if (windowWidth > 0.8 * parentElementWidth) {
         this.updateWindowPosition({ newX: parentElementX })
-        this.updateWindowSize({ newWidth: parentElementWidth })
+        this.updateWindowSizeWithAnimation({ newWidth: parentElementWidth })
       }
     },
     /**
      * 停止调整大小
      * @private
      */
-    _stopResize () {
+    _stopResize() {
       this._enableTextSelection()
       this.$emit('stopResize', { ...this.windowState })
       this.isResizing = false
@@ -1385,7 +2110,7 @@ export default {
      * 停止调整大小(移动端)
      * @private
      */
-    _stopTouchResize () {
+    _stopTouchResize() {
       this._enableTextSelection()
       this.$emit('stopResize', { ...this.windowState })
       this.isResizing = false
@@ -1399,7 +2124,7 @@ export default {
      * 禁用文本选择
      * @private
      */
-    _disableTextSelection () {
+    _disableTextSelection() {
       document.body.style.userSelect = 'none'
       document.body.style.webkitUserSelect = 'none'
       document.body.style.msUserSelect = 'none'
@@ -1409,17 +2134,17 @@ export default {
      * 启用文本选择
      * @private
      */
-    _enableTextSelection () {
-      document.body.style.userSelect = ''
-      document.body.style.webkitUserSelect = ''
-      document.body.style.msUserSelect = ''
-      document.body.style.mozUserSelect = ''
+    _enableTextSelection() {
+      // document.body.style.userSelect = ''
+      // document.body.style.webkitUserSelect = ''
+      // document.body.style.msUserSelect = ''
+      // document.body.style.mozUserSelect = ''
     },
     /**
      * 双击标题栏
      * @private
      */
-    _handleDoubleClickTitleBar () {
+    _handleDoubleClickTitleBar() {
       if (this.windowSizeStatus === 'normal') {
         this.handleMaximize()
         return
@@ -1434,32 +2159,34 @@ export default {
      * @returns {null}
      * @public
      */
-    getFloatWindowId () {
+    getFloatWindowId() {
       return this.windowId
     },
     /**
      * 获取窗口状态
      * @returns {{x: *|number, width: *|number, y: *|number, height: *|number, zIndex: number}}
      */
-    getFloatWindowState () {
+    getFloatWindowState() {
       return this.windowState
     },
     /**
      * 获取窗口大小状态
      * @returns {default.defaultWindowSizeStatus}
      */
-    getFloatWindowSizeStatus () {
+    getFloatWindowSizeStatus() {
       return this.windowSizeStatus
     },
     /**
      * 展示窗口
      * @public
      */
-    show () {
+    show() {
       if (!this.isActionEnable('show')) {
         return
       }
       this.windowSizeStatus = 'normal'
+      // 更新最大索引
+      this._handleClickFloatWindow()
       /**
        * 悬浮窗状态改变时调用
        * @event windowStatusChange
@@ -1471,7 +2198,7 @@ export default {
      * 隐藏窗口
      * @public
      */
-    hide () {
+    hide() {
       if (!this.isActionEnable('hide')) {
         return
       }
@@ -1489,7 +2216,7 @@ export default {
      * @param newHeight
      * @public
      */
-    updateWindowSize ({ newWidth, newHeight }) {
+    updateWindowSize({ newWidth, newHeight }) {
       if (newWidth || newWidth === 0) {
         this.windowState.width = newWidth
       }
@@ -1498,12 +2225,30 @@ export default {
       }
     },
     /**
+     * 更新窗口大小带动画
+     * @param newWidth
+     * @param newHeight
+     * @public
+     */
+    updateWindowSizeWithAnimation({ newWidth, newHeight }) {
+      this.windowState.transition = 'width 0.3s, height 0.3s, left 0.3s, top 0.3s'
+      if (newWidth || newWidth === 0) {
+        this.windowState.width = newWidth
+      }
+      if (newHeight || newHeight === 0) {
+        this.windowState.height = newHeight
+      }
+      setTimeout(() => {
+        this.windowState.transition = ''
+      }, 300)
+    },
+    /**
      * 更新窗口位置
      * @param newX
      * @param newY
      * @public
      */
-    updateWindowPosition ({ newX, newY }) {
+    updateWindowPosition({ newX, newY }) {
       if (newX || newX === 0) {
         this.windowState.x = newX
       }
@@ -1515,24 +2260,32 @@ export default {
      * 最大化窗口
      * @public
      */
-    handleMaximize () {
+    handleMaximize() {
       this.windowSizeStatus = 'maximize'
+      this.$emit('windowStatusChange', this.windowSizeStatus)
+    },
+    /**
+     * 最小化窗口
+     * @public
+     */
+    handleMinimize() {
+      this.windowSizeStatus = 'hide'
       this.$emit('windowStatusChange', this.windowSizeStatus)
     },
     /**
      * 复原窗口
      * @public
      */
-    handleRestore () {
+    handleRestore() {
       const parentElementWidth = this.parentElementWidth
       const parentElementHeight = this.parentElementHeight
       const parentElementX = this.parentElementX
       const parentElementY = this.parentElementY
-      const defaultWindowWidth = _convertToPx(this.defaultSize.width, false)
-      const defaultWindowHeight = _convertToPx(this.defaultSize.height, true)
+      const defaultWindowWidth = _convertToVw(this.defaultSize.width, false)
+      const defaultWindowHeight = _convertToVh(this.defaultSize.height, true)
       const { width: nowWidth, height: nowHeight, x: nowX, y: nowY } = this.windowState
-      // 最小化复原窗口逻辑
-      if (this.windowSizeStatus === 'minimize') {
+      // 悬浮球复原窗口逻辑
+      if (this.windowSizeStatus === 'ball') {
         this.windowSizeStatus = 'normal'
         // this.updateWindowSize({
         //   newWidth: nowWidth,
@@ -1545,20 +2298,20 @@ export default {
       // 最大化复原窗口逻辑
       if (this.windowSizeStatus === 'maximize') {
         this.windowSizeStatus = 'normal'
-        this.updateWindowSize({
+        this.updateWindowSizeWithAnimation({
           newWidth: defaultWindowWidth,
           newHeight: defaultWindowHeight
         })
         this.updateWindowPosition({
-          newX: parentElementX + ((parentElementWidth - defaultWindowWidth) / 2),
-          newY: parentElementY + ((parentElementHeight - defaultWindowHeight) / 2)
+          newX: nowX,
+          newY: nowY
         })
         this.$emit('windowStatusChange', this.windowSizeStatus)
         return
       }
       // 小窗口复原
       if (this.windowSizeStatus === 'normal') {
-        this.updateWindowSize({
+        this.updateWindowSizeWithAnimation({
           newWidth: defaultWindowWidth,
           newHeight: defaultWindowHeight
         })
@@ -1588,7 +2341,7 @@ export default {
             newX: (parentElementX + defaultWindowWidth / 2)
           })
         }
-        this.updateWindowSize({
+        this.updateWindowSizeWithAnimation({
           newWidth: defaultWindowWidth
         })
         this.$emit('windowStatusChange', this.windowSizeStatus)
@@ -1599,7 +2352,7 @@ export default {
         this.updateWindowPosition({
           newY: (parentElementY + defaultWindowHeight / 2)
         })
-        this.updateWindowSize({
+        this.updateWindowSizeWithAnimation({
           newHeight: defaultWindowHeight
         })
         this.$emit('windowStatusChange', this.windowSizeStatus)
@@ -1608,32 +2361,32 @@ export default {
     /**
      * 置顶窗口
      */
-    handleTop () {
+    handleTop() {
       if (this.isTop) {
         this.windowState.zIndex = 20
         this.isTop = false
         return
       }
-      this.windowState.zIndex = 999
+      this.windowState.zIndex = 999999
       this.isTop = true
     },
     /**
      * 放大窗口内容
      */
-    handleZoomIn () {
+    handleZoomIn() {
       this.$refs.contentWrapperRef._handleZoomIn()
     },
     /**
      * 缩小窗口内容
      */
-    handleZoomOut () {
+    handleZoomOut() {
       this.$refs.contentWrapperRef._handleZoomOut()
     },
     /**
      * 关闭tab页
      * @param index
      */
-    handleCloseTab (index) {
+    handleCloseTab(index) {
       if (this.currentTabs.length === 1) {
         this.closeWindow()
         return
@@ -1647,32 +2400,32 @@ export default {
      * 切换tab页
      * @param index
      */
-    handleTabClick (index) {
+    handleTabClick(index) {
       this.currentTabIndex = index
     },
     /**
      * 添加tab页
      */
-    handleAddTab () {
+    handleAddTab() {
       this.currentTabs.push({ key: this._generateUUID(), ...this.newTab })
       this.currentTabIndex = this.currentTabs.length - 1
     },
     /**
-     * 最小化窗口
+     * 悬浮球窗口
      * @public
      */
-    handleMinimize () {
+    handleBall() {
       this.$emit('dblclickFloatBall')
       const { width, height, x, y } = this.windowState
       this.updateWindowPosition({ newX: x + (width / 2), newY: y + (height / 2) })
-      this.windowSizeStatus = 'minimize'
+      this.windowSizeStatus = 'ball'
       this.$emit('windowStatusChange', this.windowSizeStatus)
     },
     /**
      * 关闭窗口
      * @public
      */
-    closeWindow () {
+    closeWindow() {
       if (!this.isActionEnable('close')) {
         return
       }
@@ -1684,7 +2437,7 @@ export default {
     /**
      * 真正关闭窗口的逻辑
      */
-    _done () {
+    _done() {
       this.$emit('closeWindow')
       const el = this.$el
       if (!el) {
@@ -1701,23 +2454,36 @@ export default {
       el.parentNode.removeChild(el)
       this.$destroy()
     }
-  },
-  beforeDestroy () {
-    document.removeEventListener('click', this._handleOutsideClick)
-    window.removeEventListener('resize', this._handleOutsideResize)
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.scale-leave,
+.scale-enter-to {
+  opacity: 1;
+}
+.scale-leave-active,
+.scale-enter-active {
+  transition: all 1s;
+}
+.scale-leave-to,
+.scale-enter {
+  opacity: 0.5;
+}
 
 .window {
-  -moz-box-shadow:2px 2px 5px #333333;
-  -webkit-box-shadow:2px 2px 5px #333333;
-  box-shadow:2px 2px 5px #333333;
+  -moz-box-shadow:0.1vw 0.1vw 0.4vw #333333;
+  -webkit-box-shadow:0.1vw 0.1vw 0.4vw #333333;
+  box-shadow:0.1vw 0.1vw 0.4vw #333333;
+  border-width: 0.2vw;
+  border-style: solid;
   cursor: move;
   border-radius: 10px;
   background-color: white;
+  //display: flex;
+  //flex-direction: column;
+  //align-items: center;
   &.maximized {
     z-index: 1000;
   }
@@ -1729,27 +2495,29 @@ export default {
     background-color: #3a5169;
   }
 
-  $size: 20px;
+  $widthSize: 1.7vw;
+  $heightSize: 2.4vh;
 
   .corner{
-    width: $size+10;
-    height: $size+10;
+    aspect-ratio: 1 / 1;
+    height: $heightSize+1.1;
   }
 
   .resizer {
     position: absolute;
+    transition: all 0.3s ease;
     &:hover{
       background-color: rgba(0, 0, 0, 0.1);
     }
     &-top,
     &-bottom {
       width: 100%;
-      height: $size;
+      height: $heightSize;
     }
 
     &-left,
     &-right {
-      width: $size;
+      width: $widthSize;
       height: 100%;
     }
 
@@ -1758,6 +2526,20 @@ export default {
       left: 0;
       right: 0;
       cursor: n-resize;
+      border-bottom-left-radius: 50%;
+      border-bottom-right-radius: 50%;
+      image{
+        opacity: 0;
+        -webkit-user-drag: none!important;
+        -moz-user-select: none!important;
+        -ms-user-select: none!important;
+        user-select: none!important;
+      }
+      &:hover{
+        image{
+          opacity: 1;
+        }
+      }
     }
 
     &-bottom {
@@ -1765,6 +2547,20 @@ export default {
       left: 0;
       right: 0;
       cursor: s-resize;
+      border-top-left-radius: 50%;
+      border-top-right-radius: 50%;
+      image{
+        opacity: 0;
+        -webkit-user-drag: none!important;
+        -moz-user-select: none!important;
+        -ms-user-select: none!important;
+        user-select: none!important;
+      }
+      &:hover{
+        image{
+          opacity: 1;
+        }
+      }
     }
 
     &-left {
@@ -1772,6 +2568,20 @@ export default {
       bottom: 0;
       left: 0;
       cursor: w-resize;
+      border-top-right-radius: 50%;
+      border-bottom-right-radius: 50%;
+      image{
+        opacity: 0;
+        -webkit-user-drag: none!important;
+        -moz-user-select: none!important;
+        -ms-user-select: none!important;
+        user-select: none!important;
+      }
+      &:hover{
+        image{
+          opacity: 1;
+        }
+      }
     }
 
     &-right {
@@ -1779,6 +2589,20 @@ export default {
       bottom: 0;
       right: 0;
       cursor: e-resize;
+      border-top-left-radius: 50%;
+      border-bottom-left-radius: 50%;
+      image{
+        opacity: 0;
+        -webkit-user-drag: none!important;
+        -moz-user-select: none!important;
+        -ms-user-select: none!important;
+        user-select: none!important;
+      }
+      &:hover{
+        image{
+          opacity: 1;
+        }
+      }
     }
 
     &-top-left {
@@ -1808,14 +2632,88 @@ export default {
   .split-screen-mask{
     z-index: -1;
     position: fixed;
-    display: none;
-    filter: blur(5px);
-    -webkit-filter: blur(5px);
-    background: hsla(0, 0, 0, 0.2);
-    width:  calc(100% + 80px);
-    height: calc(100% + 80px);
+    filter: blur(0.4vw);
+    -webkit-filter: blur(0.4vw);
+    background: hsla(0, 0%, 0%, 0.2);
+    width:  calc(100% + 7vw);
+    height: calc(100% + 10vh);
     pointer-events:none;
     border-radius: 10px;
+    opacity: 0;
+    transition: all 0.5s;
+  }
+  .split-screen-choose-mask{
+    border-style: solid;
+    position: fixed;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    border-radius:10px;
+    flex-direction: row;
+    background-color: white;
+    transition: all 0.5s;
+    opacity:0;
+    &-item{
+      padding: 6.2% 3.2%;
+      flex: 1;
+      gap: 10%;
+      &-inner{
+        width: 100%;
+        height: 100%;
+        border-style: solid;
+        border-radius: 10px;
+        background-color: bisque;
+        &:hover{
+          background-color: #3A71A8;
+        }
+      }
+    }
+    .left-right-layout{
+      display: flex;
+      flex-direction: row;
+    }
+    .left-right-layout-with-ratio{
+      display: flex;
+      flex-direction: row;
+      :first-child{
+        flex: 2;
+      }
+      :last-child{
+        flex: 1;
+      }
+    }
+    .four-part-layout{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .three-part-layout{
+      display: flex;
+      flex-direction: row;
+    }
+    .three-part-layout-with-ratio{
+      display: flex;
+      flex-direction: row;
+      :first-child{
+        flex: 1;
+      }
+      :nth-child(2){
+        flex: 2;
+      }
+      :last-child{
+        flex: 1;
+      }
+    }
+    .nine-part-layout{
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .focus-layout{
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      :first-child{
+        grid-column: span 2;
+        grid-row: span 2;
+      }
+    }
   }
 }
 

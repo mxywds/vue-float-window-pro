@@ -6,20 +6,27 @@ export default {
      */
     ballHeight: {
       type: Number | String,
-      default: 40
+      default: '6vw'
     },
     /**
      * 悬浮球宽度
      */
     ballWidth: {
       type: Number | String,
-      default: 40
+      default: '6vw'
     },
     /**
      * 悬浮球样式
      */
     ballStyle: {
       type: [Object, String]
+    },
+    /**
+     * 窗口图标
+     */
+    defaultIconSrc: {
+      type: String,
+      default: 'info.png'
     }
   }
 }

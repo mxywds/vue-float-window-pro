@@ -5,36 +5,37 @@
     <!--      文件管理-->
     <FloatWindow
       parent-limitation
-      @beforeClose="handleClose"
-      :disabledActions="[]"
+      :disabled-actions="[]"
       :default-size="{width: '60vw', height: '60vh'}"
-      title="文件管理(演示)">
+      title="文件管理(演示)"
+      @beforeClose="handleClose"
+    >
       <template #titleBarLeft>
-        <i class="el-icon-folder"/>
+        <i class="el-icon-folder" />
       </template>
       <template #toolbar>
         <div class="toolbar">
           <div class="icons">
-            <i class="el-icon-arrow-left"/>
-            <i class="el-icon-arrow-right"/>
-            <i class="el-icon-top"/>
-            <i class="el-icon-refresh"/>
+            <i class="el-icon-arrow-left" />
+            <i class="el-icon-arrow-right" />
+            <i class="el-icon-top" />
+            <i class="el-icon-refresh" />
           </div>
           <el-breadcrumb separator-class="el-icon-arrow-right">
             <el-breadcrumb-item :to="{ path: '/' }">此电脑</el-breadcrumb-item>
             <el-breadcrumb-item>系统(C:)</el-breadcrumb-item>
             <el-breadcrumb-item>Program Files</el-breadcrumb-item>
           </el-breadcrumb>
-          <el-input v-model="demoInput" prefix-icon="el-icon-search" placeholder="搜索一下..."/>
+          <el-input v-model="demoInput" prefix-icon="el-icon-search" placeholder="搜索一下..." />
         </div>
       </template>
       <template #leftSidebar>
-        <el-tree :data="demoTree"></el-tree>
+        <el-tree :data="demoTree" />
       </template>
       <template #rightSidebar>
         <div class="right-sidebar">
           <div class="big-icon-wrapper">
-            <i class="el-icon-folder"/>
+            <i class="el-icon-folder" />
           </div>
           <div>
             <h3>Docker</h3>
@@ -58,40 +59,126 @@
         <el-table
           :data="demoTableData"
           height="100%"
-          style="width: 100%">
+          style="width: 100%"
+        >
           <el-table-column
             prop="name"
             width="160px"
-            label="名称">
+            label="名称"
+          >
             <template slot-scope="scope">
-              <i class="el-icon-folder"/>
+              <i class="el-icon-folder" />
               <span style="margin-left: 10px">{{ scope.row.name }}</span>
             </template>
           </el-table-column>
           <el-table-column
             prop="date"
             width="160px"
-            label="修改日期">
-          </el-table-column>
+            label="修改日期"
+          />
           <el-table-column
             prop="type"
             label="类型"
           />
           <el-table-column
             prop="size"
-            label="大小"/>
+            label="大小"
+          />
         </el-table>
       </template>
       <template #footer>
         <div class="footer">3个项目</div>
       </template>
       <template #floatBall>
-        <i class="el-icon-folder"/>
+        <i class="el-icon-folder" />
       </template>
     </FloatWindow>
   </div>
 </template>
 
+<script>
+
+import FloatWindow from '@/components/FloatWindow/index.vue'
+
+export default {
+  name: 'FileView',
+  components: { FloatWindow },
+  data() {
+    return {
+      demoInput: null,
+      demoTableData: [
+        {
+          name: 'Docker',
+          type: '文件夹',
+          size: '-',
+          date: '2023/4/18 23:57'
+        },
+        {
+          name: 'Hyper-V',
+          type: '文件夹',
+          size: '-',
+          date: '2024/4/28 19:46'
+        },
+        {
+          name: 'WindowsApps',
+          type: '文件夹',
+          size: '-',
+          date: '2024/5/9 18:21'
+        }
+      ],
+      demoTree: [{
+        label: '系统(C:)',
+        children: [{
+          label: 'Program Files',
+          children: [{
+            label: 'Docker'
+          },
+          {
+            label: 'Hyper-V'
+          },
+          {
+            label: 'WindowsApps'
+          }]
+        }]
+      }, {
+        label: 'Windows',
+        children: [{
+          label: 'appcompat',
+          children: [{
+            label: 'Backup'
+          }]
+        }, {
+          label: 'appatch',
+          children: [{
+            label: 'Custom'
+          }]
+        }]
+      }, {
+        label: 'Boot',
+        children: [{
+          label: 'Fonts'
+        }, {
+          label: 'debug'
+        }]
+      }]
+    }
+  },
+  async mounted() {
+
+  },
+  methods: {
+    async handleClose(done) {
+      await this.$alert('确定关闭悬浮窗吗', '提示', {
+        confirmButtonText: '确定',
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      done()
+    }
+  }
+}
+</script>
 <style lang="scss" scoped>
 
 .toolbar {
@@ -158,86 +245,3 @@
   text-align: center;
 }
 </style>
-<script>
-
-import FloatWindow from '@/components/FloatWindow/index.vue'
-
-export default {
-  name: 'FileView',
-  components: { FloatWindow },
-  data () {
-    return {
-      demoInput: null,
-      demoTableData: [
-        {
-          name: 'Docker',
-          type: '文件夹',
-          size: '-',
-          date: '2023/4/18 23:57'
-        },
-        {
-          name: 'Hyper-V',
-          type: '文件夹',
-          size: '-',
-          date: '2024/4/28 19:46'
-        },
-        {
-          name: 'WindowsApps',
-          type: '文件夹',
-          size: '-',
-          date: '2024/5/9 18:21'
-        }
-      ],
-      demoTree: [{
-        label: '系统(C:)',
-        children: [{
-          label: 'Program Files',
-          children: [{
-            label: 'Docker'
-          },
-          {
-            label: 'Hyper-V'
-          },
-          {
-            label: 'WindowsApps'
-          }]
-        }]
-      }, {
-        label: 'Windows',
-        children: [{
-          label: 'appcompat',
-          children: [{
-            label: 'Backup'
-          }]
-        }, {
-          label: 'appatch',
-          children: [{
-            label: 'Custom'
-          }]
-        }]
-      }, {
-        label: 'Boot',
-        children: [{
-          label: 'Fonts'
-        }, {
-          label: 'debug'
-        }]
-      }]
-    }
-  },
-  methods: {
-    async handleClose (done) {
-      await this.$alert('确定关闭悬浮窗吗', '提示', {
-        confirmButtonText: '确定',
-        showCancelButton: true,
-        cancelButtonText: '取消',
-        type: 'warning'
-      })
-      done()
-    }
-  },
-  async mounted () {
-
-  }
-}
-</script>

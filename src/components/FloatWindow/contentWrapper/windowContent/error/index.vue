@@ -4,8 +4,6 @@
   </div>
 </template>
 
-<style lang="scss" scoped>
-</style>
 <script>
 
 export default {
@@ -14,11 +12,13 @@ export default {
   data () {
     return {}
   },
-  methods: {
+  async mounted () {
 
   },
-  async mounted () {
+  methods: {
 
   }
 }
 </script>
+<style lang="scss" scoped>
+</style>

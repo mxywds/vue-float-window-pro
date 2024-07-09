@@ -4,14 +4,15 @@
     <h2>记事本</h2>
     <!--      记事本-->
     <FloatWindow
-      @beforeClose="handleClose"
       parent-limitation
       class="notepad-window"
       :default-size="{width: '60vw', height: '60vh'}"
-      :disabledActions="['rightSidebar','leftSidebar']"
-      title="记事本(演示)">
+      :disabled-actions="['rightSidebar','leftSidebar']"
+      title="记事本(演示)"
+      @beforeClose="handleClose"
+    >
       <template #titleBarLeft>
-        <i class="el-icon-document"/>
+        <i class="el-icon-document" />
       </template>
       <template #toolbar>
         <div class="toolbar">
@@ -23,24 +24,52 @@
       <template #default>
         <div class="textarea-wrapper">
           <el-input
+            v-model="demoTextarea"
             class="textarea"
             type="textarea"
             :rows="20"
             placeholder="请输入内容"
-            v-model="demoTextarea">
-          </el-input>
+          />
         </div>
       </template>
       <template #footer>
         <div class="footer">{{ demoTextarea.length }}个字符</div>
       </template>
       <template #floatBall>
-        <i class="el-icon-edit"/>
+        <i class="el-icon-edit" />
       </template>
     </FloatWindow>
   </div>
 </template>
 
+<script>
+
+import FloatWindow from '@/components/FloatWindow/index.vue'
+
+export default {
+  name: 'NotePadView',
+  components: { FloatWindow },
+  data() {
+    return {
+      demoTextarea: ''
+    }
+  },
+  async mounted() {
+
+  },
+  methods: {
+    async handleClose(done) {
+      await this.$alert('确定关闭悬浮窗吗', '提示', {
+        confirmButtonText: '确定',
+        showCancelButton: true,
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      done()
+    }
+  }
+}
+</script>
 <style lang="scss" scoped>
 .notepad-window {
   .el-icon-document {
@@ -81,31 +110,3 @@
 
 }
 </style>
-<script>
-
-import FloatWindow from '@/components/FloatWindow/index.vue'
-
-export default {
-  name: 'NotePadView',
-  components: { FloatWindow },
-  data () {
-    return {
-      demoTextarea: ''
-    }
-  },
-  methods: {
-    async handleClose (done) {
-      await this.$alert('确定关闭悬浮窗吗', '提示', {
-        confirmButtonText: '确定',
-        showCancelButton: true,
-        cancelButtonText: '取消',
-        type: 'warning'
-      })
-      done()
-    }
-  },
-  async mounted () {
-
-  }
-}
-</script>

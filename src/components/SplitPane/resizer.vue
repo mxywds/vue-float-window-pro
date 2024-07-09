@@ -1,13 +1,13 @@
 <template>
-  <div :class="classes"/>
+  <div :class="classes" />
 </template>
 
 <script>
 export default {
-  name: 'resizerView',
+  name: 'ResizerView',
   props: {
     split: {
-      validator (value) {
+      validator(value) {
         return ['vertical', 'horizontal'].indexOf(value) >= 0
       },
       required: true
@@ -15,7 +15,7 @@ export default {
     className: String
   },
   computed: {
-    classes () {
+    classes() {
       const classes = ['splitter-pane-resizer', this.split, this.className]
       return classes.join(' ')
     }
@@ -23,7 +23,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .splitter-pane-resizer {
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;

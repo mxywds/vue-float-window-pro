@@ -3,9 +3,10 @@
     <h1>设计理念</h1>
     <!--      设计理念-->
     <FloatWindow
-      @beforeClose="handleClose"
       parent-limitation
-      title="设计理念">
+      title="设计理念"
+      @beforeClose="handleClose"
+    >
       <div>
         <h2>简单至上</h2>
         <p>简单的API，开箱即用</p>
@@ -20,8 +21,6 @@
   </div>
 </template>
 
-<style lang="scss" scoped>
-</style>
 <script>
 
 import FloatWindow from '@/components/FloatWindow/index.vue'
@@ -29,11 +28,14 @@ import FloatWindow from '@/components/FloatWindow/index.vue'
 export default {
   name: 'IdeaView',
   components: { FloatWindow },
-  data () {
+  data() {
     return {}
   },
+  async mounted() {
+
+  },
   methods: {
-    async handleClose (done) {
+    async handleClose(done) {
       await this.$alert('确定关闭悬浮窗吗', '提示', {
         confirmButtonText: '确定',
         showCancelButton: true,
@@ -42,9 +44,8 @@ export default {
       })
       done()
     }
-  },
-  async mounted () {
-
   }
 }
 </script>
+<style lang="scss" scoped>
+</style>

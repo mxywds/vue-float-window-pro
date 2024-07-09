@@ -4,12 +4,13 @@
       ref="splitPane"
       split="horizontal"
       :hide-l="!$slots.toolbar"
-      :default-percent="10">
+      :default-percent="10"
+    >
       <template #paneL>
         <!-- 工具栏 -->
         <div class="toolbar">
           <slot name="toolbar">
-            <toolbar-view/>
+            <toolbar-view />
           </slot>
         </div>
       </template>
@@ -17,18 +18,20 @@
         <split-pane
           split="horizontal"
           :hide-r="!$slots.footer"
-          :default-percent="90">
+          :default-percent="90"
+        >
           <template #paneL>
             <split-pane
               split="vertical"
               :hide-l="!$slots.leftSidebar"
               class="center-wrapper"
-              :default-percent="20">
+              :default-percent="20"
+            >
               <template #paneL>
                 <!-- 左侧栏 -->
                 <div class="left-sidebar">
                   <slot name="leftSidebar">
-                    <left-sidebar/>
+                    <left-sidebar />
                   </slot>
                 </div>
               </template>
@@ -36,7 +39,8 @@
                 <split-pane
                   split="vertical"
                   :hide-r="!$slots.rightSidebar"
-                  :default-percent="75">
+                  :default-percent="75"
+                >
                   <template #paneL>
                     <!-- 中央窗口 -->
                     <div class="content">
@@ -55,7 +59,7 @@
                     <!-- 右边栏 -->
                     <div class="right-sidebar">
                       <slot name="rightSidebar">
-                        <right-sidebar/>
+                        <right-sidebar />
                       </slot>
                     </div>
                   </template>
@@ -67,7 +71,7 @@
             <!-- 尾栏 -->
             <div class="footer">
               <slot name="footer">
-                <footer-view/>
+                <footer-view />
               </slot>
             </div>
           </template>
@@ -75,15 +79,27 @@
       </template>
 
     </split-pane>
-    <div class="resizing-mask"
-         v-show="isResizing"/>
-    <div class="dragging-mask"
-         v-show="isDragging"/>
-    <div class="small-window-mask"
-         @touchstart.stop="_startTouchDrag"
-         @mousedown.stop="_startDrag"
-         @dblclick.prevent="_handleRestore"
-         v-show="isSmallWindow"/>
+    <div
+      :style="appOpenMaskStyle"
+      class="app-open-mask"
+    >
+      <image :src="defaultIconSrc" />
+    </div>
+    <div
+      v-show="isResizing"
+      class="resizing-mask"
+    />
+    <div
+      v-show="isDragging"
+      class="dragging-mask"
+    />
+    <div
+      v-show="isSmallWindow"
+      class="small-window-mask"
+      @touchstart.stop="_startTouchDrag"
+      @mousedown.stop="_startDrag"
+      @dblclick.prevent="_handleRestore"
+    />
   </div>
 </template>
 <script>
@@ -94,12 +110,26 @@ import FooterView from '@/components/FloatWindow/contentWrapper/footer/index.vue
 import LeftSidebar from '@/components/FloatWindow/contentWrapper/leftSidebar/index.vue'
 import RightSidebar from '@/components/FloatWindow/contentWrapper/rightSidebar/index.vue'
 import actionProps from '@/components/FloatWindow/action/props'
-import { _convertToPx } from '@/components/FloatWindow/utils'
+import { _convertToVh, _convertToVw } from '@/components/FloatWindow/utils'
 export default {
-  name: 'contentWrapper',
+  name: 'ContentWrapper',
+  components: {
+    RightSidebar,
+    LeftSidebar,
+    FooterView,
+    ToolbarView,
+    WindowContent,
+    splitPane
+  },
   mixins: [actionProps],
-  emits: ['startTouchDrag', 'startDrag', 'handleRestore'],
   props: {
+    /**
+     * 窗口图标
+     */
+    defaultIconSrc: {
+      type: String,
+      default: ''
+    },
     /**
      * 窗口是否正在缩放
      */
@@ -139,12 +169,12 @@ export default {
      */
     windowState: {
       type: Object,
-      default () {
+      default() {
         return {
-          x: _convertToPx(this.defaultPosition.x, false),
-          y: _convertToPx(this.defaultPosition.y, true),
-          width: _convertToPx(this.defaultSize.width, false),
-          height: _convertToPx(this.defaultSize.height, true),
+          x: _convertToVw(this.defaultPosition.x, false),
+          y: _convertToVh(this.defaultPosition.y, true),
+          width: _convertToVw(this.defaultSize.width, false),
+          height: _convertToVh(this.defaultSize.height, true),
           zIndex: 200
         }
       }
@@ -154,7 +184,7 @@ export default {
      */
     parentElementHeight: {
       type: Number,
-      default () {
+      default() {
         return window.innerHeight
       }
     },
@@ -163,23 +193,25 @@ export default {
      */
     parentElementWidth: {
       type: Number,
-      default () {
+      default() {
         return window.innerWidth
       }
     }
   },
-  data () {
+  emits: ['startTouchDrag', 'startDrag', 'handleRestore'],
+  data() {
     return {
+      appOpenMaskStyle: {
+        opacity: 1,
+        visibility: 'visible'
+      }
     }
-  },
-  watch: {
-
   },
   computed: {
     /**
      * 是否为小窗口
      */
-    isSmallWindow () {
+    isSmallWindow() {
       const { width, height } = this.windowState
       const parentElementWidth = this.parentElementWidth
       const parentElementHeight = this.parentElementHeight
@@ -187,10 +219,9 @@ export default {
       if (parentElementHeight / 3 <= height && parentElementWidth / 3 <= width) {
         return false
       }
-      const minSize = Math.min(width, height)
-      return minSize < 240
+      return width < 21.3 || height < 30.1
     },
-    currentTab () {
+    currentTab() {
       if (!this.currentTabs || this.currentTabs.length === 0) {
         return {
           key: 'none',
@@ -205,28 +236,50 @@ export default {
       return this.currentTabs[this.currentTabIndex]
     }
   },
-  components: {
-    RightSidebar,
-    LeftSidebar,
-    FooterView,
-    ToolbarView,
-    WindowContent,
-    splitPane
+  watch: {
+
+  },
+  mounted() {
+    this._handleOpenAppMaskShow()
   },
   methods: {
-    _startTouchDrag (event) {
+    /**
+     * 显示启动动画
+     * @private
+     */
+    _handleOpenAppMaskShow() {
+      const startTime = Date.now()
+      const minTime = 1000
+      this.$nextTick(() => {
+        const endTime = Date.now()
+        if (endTime - startTime >= minTime) {
+          this.appOpenMaskStyle = {
+            opacity: 0,
+            visibility: 'hidden'
+          }
+          return
+        }
+        setTimeout(() => {
+          this.appOpenMaskStyle = {
+            opacity: 0,
+            visibility: 'hidden'
+          }
+        }, minTime - (endTime - startTime))
+      })
+    },
+    _startTouchDrag(event) {
       this.$emit('startTouchDrag', event)
     },
-    _startDrag (event) {
+    _startDrag(event) {
       this.$emit('startDrag', event)
     },
-    _handleRestore () {
+    _handleRestore() {
       this.$emit('handleRestore')
     },
     /**
      * 放大窗口内容
      */
-    _handleZoomIn () {
+    _handleZoomIn() {
       const heightScale = 1.1
       const widthScale = 1.1
       const contentWrapper = this.$refs.splitPane
@@ -239,7 +292,7 @@ export default {
     /**
      * 缩小窗口内容
      */
-    _handleZoomOut () {
+    _handleZoomOut() {
       const heightScale = 0.9
       const widthScale = 0.9
       const contentWrapper = this.$refs.splitPane
@@ -256,7 +309,7 @@ export default {
      * @param widthScale
      * @private
      */
-    _scalingToChildren (element, heightScale, widthScale) {
+    _scalingToChildren(element, heightScale, widthScale) {
       if (!element) {
         return
       }
@@ -276,6 +329,7 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
+
 @mixin scrollbar{
   -webkit-overflow-scrolling: touch;
   pointer-events: auto;
@@ -301,7 +355,8 @@ export default {
     border-radius: 5px;
   }
 }
-.content-wrapper, .toolbar,.left-sidebar, .content, .right-sidebar, .footer {
+
+.content-wrapper,.left-sidebar, .content, .right-sidebar, .footer {
   height: 100%;
   position: relative;
   overflow: auto;
@@ -312,7 +367,7 @@ export default {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0 20px 20px 20px;
+  padding: 0 1.7vw 1.7vw 1.7vw;
   border-radius: 0 0 10px 10px;
   .toolbar{
     background-color: white;
@@ -340,7 +395,7 @@ export default {
     display: flex;
     align-items: center;
   }
-  .resizing-mask,.dragging-mask,.outside-click-mask,.small-window-mask{
+  .app-open-mask,.resizing-mask,.dragging-mask,.outside-click-mask,.small-window-mask{
     position: absolute;
     top: 0;
     left: 0;
@@ -348,8 +403,29 @@ export default {
     height: 100%;
     //backdrop-filter: blur(2px);
   }
+  .app-open-mask{
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: all 1s;
+    image{
+      height: 5%;
+      aspect-ratio: 1 / 1;
+      animation: expand 0.5s forwards;
+    }
+    @keyframes expand {
+      from {
+        height: 5%;
+      }
+      to {
+        height: 30%;
+      }
+    }
+  }
   .small-window-mask{
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(0.1vw);
     background-color: rgba(255, 255, 255, 0.2);
   }
 

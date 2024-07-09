@@ -5,7 +5,9 @@
 </template>
 <script>
 export default {
-  name: 'leftSidebar',
+  name: 'LeftSidebar',
+  components: {
+  },
   props: {
 
   },
@@ -16,8 +18,6 @@ export default {
   },
   watch: {
 
-  },
-  components: {
   },
   methods: {
 

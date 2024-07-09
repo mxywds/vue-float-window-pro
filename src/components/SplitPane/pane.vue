@@ -1,7 +1,7 @@
 <template>
   <div :class="classes">
-    <slot/>
-    </div>
+    <slot />
+  </div>
 </template>
 <script>
 export default {
@@ -9,7 +9,7 @@ export default {
   props: {
     className: String
   },
-  data () {
+  data() {
     const classes = [this.$parent.split, this.className]
     return {
       classes: classes.join(' '),
@@ -19,7 +19,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .splitter-pane.vertical.splitter-paneL {
   position: absolute;
   left: 0;

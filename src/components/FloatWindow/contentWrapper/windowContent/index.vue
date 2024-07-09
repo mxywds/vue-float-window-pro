@@ -1,17 +1,19 @@
 <template>
   <div class="window-content">
     <template
-      v-for="(tab) in pageTabs">
+      v-for="(tab) in pageTabs"
+    >
       <iframe-view
         v-show="tab.pathType === 'web'&&tab.key===pageKey"
         :key="tab.key"
         :page-key="tab.key"
         :page-path="tab.path"
-        :params="tab.params"/>
+        :params="tab.params"
+      />
     </template>
     <component
-      v-show="pagePathType !== 'web'"
       :is="currentComponent"
+      v-show="pagePathType !== 'web'"
       :page-key="pageKey"
       :page-path="pagePath"
       :params="pageParams"
@@ -20,7 +22,6 @@
 </template>
 <script>
 
-import { defineAsyncComponent } from 'vue'
 import actionProps from '@/components/FloatWindow/action/props'
 import ErrorView from './error'
 import LoadView from './load'
@@ -28,7 +29,10 @@ import routerView from './router'
 import IframeView from './iframe'
 
 export default {
-  name: 'windowContent',
+  name: 'WindowContent',
+  components: {
+    IframeView
+  },
   mixins: [actionProps],
   props: {
     pageKey: {
@@ -60,6 +64,8 @@ export default {
       componentMap: new Map()
     }
   },
+  computed: {
+  },
   watch: {
     pageKey (newValue, oldValue) {
       if (!newValue) {
@@ -70,31 +76,35 @@ export default {
       }
     }
   },
-  components: {
-    IframeView
-  },
-  computed: {
-  },
   mounted () {
   },
   methods: {
     loadComponent (catalogue, view) {
-      const currentComponent = defineAsyncComponent({
-        loader: () =>
-          new Promise((resolve, reject) => {
-            import(`@/${catalogue}${view}.vue`)
-              .then(module => {
-                resolve(module.default)
-              })
-              .catch(error => {
-                console.error('加载组件失败', error)
-                resolve(ErrorView)
-              })
-          }),
-        delay: 200,
-        loadingComponent: () => LoadView,
-        errorComponent: () => ErrorView,
-        timeout: 30000
+      // const currentComponent = defineAsyncComponent({
+      //   loader: () =>
+      //     new Promise((resolve, reject) => {
+      //       import(`@/${catalogue}${view}.vue`)
+      //         .then(module => {
+      //           resolve(module.default)
+      //         })
+      //         .catch(error => {
+      //           console.error('加载组件失败', error)
+      //           resolve(ErrorView)
+      //         })
+      //     }),
+      //   delay: 200,
+      //   loadingComponent: () => LoadView,
+      //   errorComponent: () => ErrorView,
+      //   timeout: 30000
+      // })
+      const currentComponent = () => ({
+        component: new Promise(res => {
+          res(require(`@/${catalogue}${view}.vue`))
+        }),
+        loading: LoadView,
+        delay: 500,
+        timeout: 10000,
+        error: ErrorView
       })
       this.currentComponent = currentComponent
       return currentComponent
@@ -129,11 +139,13 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   .iframe{
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
+    width: calc(100% - 1.7vw);
+    height: calc(100% - 2.5vh);
+    border: unset;
+    outline: unset;
   }
 
 }

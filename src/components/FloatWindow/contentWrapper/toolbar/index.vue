@@ -5,7 +5,9 @@
 </template>
 <script>
 export default {
-  name: 'toolbarView',
+  name: 'ToolbarView',
+  components: {
+  },
   props: {
 
   },
@@ -16,8 +18,6 @@ export default {
   },
   watch: {
 
-  },
-  components: {
   },
   methods: {
 

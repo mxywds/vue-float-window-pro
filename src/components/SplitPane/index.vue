@@ -1,31 +1,38 @@
 <template>
-  <div :style="{ cursor, userSelect}"
-       class="vue-splitter-container clearfix"
-       @mouseup="onMouseUp"
-       @mousemove="onMouseMove">
+  <div
+    :style="{ cursor, userSelect}"
+    class="vue-splitter-container clearfix"
+    @mouseup="onMouseUp"
+    @mousemove="onMouseMove"
+  >
 
-    <pane class="splitter-pane splitter-paneL"
-          v-if="!hideL"
-          :split="split"
-          :style="{ [type]: (hideR?100:percent)+'%'}">
-      <slot name="paneL"/>
+    <pane
+      v-if="!hideL"
+      class="splitter-pane splitter-paneL"
+      :split="split"
+      :style="{ [type]: (hideR?100:percent)+'%'}"
+    >
+      <slot name="paneL" />
     </pane>
 
     <resizer
-      :className="className"
       v-if="!hideL&&!hideR"
+      :class-name="className"
       :style="{ [resizeType]: percent+'%'}"
       :split="split"
       @mousedown.native="onMouseDown"
-      @click.native="onClick"/>
+      @click.native="onClick"
+    />
 
-    <pane class="splitter-pane splitter-paneR"
-          :split="split"
-          v-if="!hideR"
-          :style="{ [type]: (hideL?100:100-percent)+'%'}">
-      <slot name="paneR"/>
+    <pane
+      v-if="!hideR"
+      class="splitter-pane splitter-paneR"
+      :split="split"
+      :style="{ [type]: (hideL?100:100-percent)+'%'}"
+    >
+      <slot name="paneR" />
     </pane>
-    <div class="vue-splitter-container-mask" v-if="active"/>
+    <div v-if="active" class="vue-splitter-container-mask" />
   </div>
 </template>
 
@@ -34,7 +41,7 @@ import Resizer from './resizer.vue'
 import Pane from './pane.vue'
 
 export default {
-  name: 'splitPane',
+  name: 'SplitPane',
   components: { Resizer, Pane },
   props: {
     hideL: {
@@ -54,27 +61,14 @@ export default {
       default: 50
     },
     split: {
-      validator (value) {
+      validator(value) {
         return ['vertical', 'horizontal'].indexOf(value) >= 0
       },
       required: true
     },
     className: String
   },
-  computed: {
-    userSelect () {
-      return this.active ? 'none' : ''
-    },
-    cursor () {
-      return this.active ? (this.split === 'vertical' ? 'col-resize' : 'row-resize') : ''
-    }
-  },
-  watch: {
-    defaultPercent (newValue, oldValue) {
-      this.percent = newValue
-    }
-  },
-  data () {
+  data() {
     return {
       active: false,
       hasMoved: false,
@@ -84,21 +78,34 @@ export default {
       resizeType: this.split === 'vertical' ? 'left' : 'top'
     }
   },
+  computed: {
+    userSelect() {
+      return this.active ? 'none' : ''
+    },
+    cursor() {
+      return this.active ? (this.split === 'vertical' ? 'col-resize' : 'row-resize') : ''
+    }
+  },
+  watch: {
+    defaultPercent(newValue, oldValue) {
+      this.percent = newValue
+    }
+  },
   methods: {
-    onClick () {
+    onClick() {
       if (!this.hasMoved) {
         this.percent = 50
         this.$emit('resize', this.percent)
       }
     },
-    onMouseDown () {
+    onMouseDown() {
       this.active = true
       this.hasMoved = false
     },
-    onMouseUp () {
+    onMouseUp() {
       this.active = false
     },
-    onMouseMove (e) {
+    onMouseMove(e) {
       if (e.buttons === 0 || e.which === 0) {
         this.active = false
       }
@@ -130,7 +137,7 @@ export default {
         this.hasMoved = true
       }
     },
-    onTouchMove (e) {
+    onTouchMove(e) {
       event.preventDefault()
       const touch = e.touches[0]
 
@@ -169,7 +176,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .clearfix:after {
   visibility: hidden;
   display: block;
@@ -179,7 +186,6 @@ export default {
   height: 0;
 }
 .splitter-pane{
-  overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
 .vue-splitter-container {
