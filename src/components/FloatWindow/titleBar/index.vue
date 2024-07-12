@@ -418,7 +418,7 @@ export default {
     flex-wrap: nowrap;
     overflow: hidden;
     img {
-      height: 5.0vh;
+      height: 5.0vmin;
       aspect-ratio: 1 / 1;
       padding: 0.57vh 0.4vw;
       margin-left: 0.3vw;
@@ -471,12 +471,12 @@ export default {
           text-align: center;
         }
         img{
-          height: 3.7vh;
+          height: 3.7vmin;
           aspect-ratio: 1 / 1;
           padding: 0.57vh 0.4vw;
         }
         .close{
-          height: 3.7vh;
+          height: 3.7vmin;
           aspect-ratio: 1 / 1;
           padding:0.57vh 0.4vw;
         }
@@ -492,7 +492,7 @@ export default {
     }
 
     img{
-      height: 5.0vh;
+      height: 5.0vmin;
       aspect-ratio: 1 / 1;
       padding: 0.57vh 0.4vw;
       flex-shrink: 0;
@@ -547,7 +547,7 @@ export default {
     justify-content: flex-end;
     overflow: hidden;
     img {
-      height: 5.0vh;
+      height: 5.0vmin;
       aspect-ratio: 1 / 1;
       margin-left: 0.3vw;
       cursor: pointer;
